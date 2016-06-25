@@ -1,0 +1,28 @@
+---
+- name: Audit | lynis | Install lynis
+  git:
+    repo: https://github.com/CISOfy/lynis.git
+    accept_hostkey: True
+    remote: github
+    version: master
+    dest: "/usr/local/lynis"
+
+- name: Audit | lynis | Run lynis
+  shell: ./lynis audit system --cronjob > ~/lynis_report.txt
+  args:
+    chdir: /usr/local/lynis
+
+- name: Audit | lynis | Make local destination
+  local_action: file path="{{ local_creds_folder }}/" state=directory
+
+- name: Audit | lynis | Get report
+  fetch:
+    src: "~/lynis_report.txt"
+    dest: "{{ local_creds_folder }}/lynis_report.txt"
+    flat: yes
+
+- name: Audit | lynis | Get log
+  fetch:
+    src: "/var/log/lynis.log"
+    dest: "{{ local_creds_folder }}/lynis_log.txt"
+    flat: yes

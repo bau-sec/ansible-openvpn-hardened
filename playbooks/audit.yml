@@ -1,0 +1,6 @@
+- name: Audit Server
+# ========================================================
+  hosts: openvpn-vpn
+  
+  roles:
+    - audit

@@ -1,0 +1,192 @@
+---
+- include_vars: ../../openvpn/defaults/main.yml
+
+- name: OpenVPN | Add Clients | Register the OpenVPN server common name
+  command: cat {{ openvpn_server_common_name_file }}
+  no_log: true
+  register: openvpn_server_common_name_result
+
+- set_fact:
+    openvpn_server_common_name: "{{ openvpn_server_common_name_result.stdout }}"
+
+- name: OpenVPN | Add Clients | Check for existing private key passwords
+  local_action: stat path={{ local_creds_folder }}/{{ item }}/{{ openvpn_server_common_name }}_pk_pass.txt
+  register: client_pk_passwords_local
+  with_items:
+    - "{{ clients_to_add }}"
+
+- name: OpenVPN | Add Clients | Generate private key passwords
+  shell: echo "$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c15)"
+  no_log: true
+  register: client_pk_passwords
+  with_items: "{{ clients_to_add }}"
+  when: "client_pk_passwords_local.results[0].stat.exists == False"
+
+- name: OpenVPN | Add Clients | Make local destination
+  local_action: file path="{{ local_creds_folder }}/{{ item }}/" state=directory
+  with_items:
+    - "{{ clients_to_add }}"
+
+- name: OpenVPN | Add Clients | Write private key pass phrases
+  local_action: copy content={{ item[1].stdout }} dest={{ local_creds_folder }}/{{ item[0] }}/{{ openvpn_server_common_name }}_pk_pass.txt
+  no_log: true
+  with_together:
+    - "{{ clients_to_add }}"
+    - "{{ client_pk_passwords.results }}"
+  when: "client_pk_passwords_local.results[0].stat.exists == False"
+
+- name: OpenVPN | Add Clients | Read private key pass phrases
+  local_action: command cat {{ local_creds_folder }}/{{ item }}/{{ openvpn_server_common_name }}_pk_pass.txt
+  no_log: true
+  register: client_pk_passwords
+  with_items: "{{ clients_to_add }}"
+
+- name: OpenVPN | Add Clients | Build Clients
+  expect:
+    command: ./easyrsa build-client-full {{ item[0] }}@{{ openvpn_server_common_name }} --req-cn {{ item[0] }}@{{ openvpn_server_common_name }}
+    responses:
+      'Enter PEM pass phrase:$': "{{ item[1].stdout }}"
+      'Verifying - Enter PEM pass phrase:$': "{{ item[1].stdout }}"
+      'Enter pass phrase for .*?:$': "{{ ca_password }}"
+    chdir: "{{ openvpn_path_easyrsa }}"
+    creates: "{{ openvpn_path_keys }}/{{ item[0] }}@{{ openvpn_server_common_name }}.key"
+  no_log: true
+  with_together:
+    - "{{ clients_to_add }}"
+    - "{{ client_pk_passwords.results }}"
+
+- name: OpenVPN | Add Clients | Make client configuration directory
+  file:
+    path: "{{ openvpn_path_pki }}/ovpn"
+    mode: 0700
+    state: directory
+
+- name: OpenVPN | Add Clients | Register CA certificate contents
+  command: cat {{ openvpn_ca_cert }}
+  no_log: true
+  register: openvpn_ca_contents
+
+- name: OpenVPN | Add Clients | Register HMAC firewall key contents
+  command: cat {{ openvpn_hmac_firewall }}
+  no_log: true
+  register: openvpn_hmac_firewall_contents
+
+- name: OpenVPN | Add Clients | Register client key contents
+  command: cat {{ openvpn_path_keys }}/{{ item }}@{{ openvpn_server_common_name }}.key
+  with_items: "{{ clients_to_add }}"
+  no_log: true
+  register: openvpn_client_keys
+
+- name: OpenVPN | Add Clients | Register client certificate contents
+  command: cat {{ openvpn_path_certs }}/{{ item }}@{{ openvpn_server_common_name }}.crt
+  with_items: "{{ clients_to_add }}"
+  no_log: true
+  register: openvpn_client_certs
+
+- name: OpenVPN | Add Clients | Build client configs (.ovpn files; pki embedded)
+  template:
+    src: client_pki_embedded.ovpn.j2
+    dest: "{{ openvpn_path_pki }}/ovpn/{{ item[0] }}@{{ openvpn_server_common_name }}-pki-embedded.ovpn"
+    mode: 0400
+  no_log: true
+  with_together:
+    - "{{ clients_to_add }}"
+    - "{{ openvpn_client_certs.results }}"
+    - "{{ openvpn_client_keys.results }}"
+
+- name: OpenVPN | Add Clients | Build client configs (.ovpn files; pki external files)
+  template:
+    src: client_pki_files.ovpn.j2
+    dest: "{{ openvpn_path_pki }}/ovpn/{{ item }}@{{ openvpn_server_common_name }}-pki-files.ovpn"
+    mode: 0400
+  no_log: true
+  with_items:
+    - "{{ clients_to_add }}"
+
+- name: OpenVPN | Add Clients | Build client configs (.ovpn files; external pkcs12)
+  template:
+    src: client_pkcs12.ovpn.j2
+    dest: "{{ openvpn_path_pki }}/ovpn/{{ item }}@{{ openvpn_server_common_name }}-pkcs12.ovpn"
+    mode: 0400
+  no_log: true
+  with_items:
+    - "{{ clients_to_add }}"
+
+- name: OpenVPN | Add Clients | Generate PKCS#12
+  shell: >
+    openssl pkcs12 -export
+    -in {{ openvpn_path_certs }}/{{ item[0] }}@{{ openvpn_server_common_name }}.crt
+    -inkey {{ openvpn_path_keys }}/{{ item[0] }}@{{ openvpn_server_common_name }}.key
+    -certfile {{ openvpn_ca_cert }}
+    -name {{ item[0] }}
+    -out {{ openvpn_path_pki }}/ovpn/{{ item[0] }}@{{ openvpn_server_common_name }}.p12
+    -passin pass:{{ item[1].stdout }}
+    -passout pass:{{ item[1].stdout }}
+  args:
+    creates: "{{ openvpn_path_pki }}/ovpn/{{ item[0] }}@{{ openvpn_server_common_name }}.p12"
+  no_log: true
+  with_together:
+    - "{{ clients_to_add }}"
+    - "{{ client_pk_passwords.results }}"
+
+- name: OpenVPN | Add Clients | Get .ovpn files (*-pki-embedded.ovpn)
+  fetch:
+    src: "{{ openvpn_path_pki }}/ovpn/{{ item }}@{{ openvpn_server_common_name }}-pki-embedded.ovpn"
+    dest: "{{ local_creds_folder }}/{{ item }}/"
+    flat: yes
+  with_items:
+    - "{{ clients_to_add }}"
+
+- name: OpenVPN | Add Clients | Get .ovpn files (*-pki-files.ovpn)
+  fetch:
+    src: "{{ openvpn_path_pki }}/ovpn/{{ item }}@{{ openvpn_server_common_name }}-pki-files.ovpn"
+    dest: "{{ local_creds_folder }}/{{ item }}/"
+    flat: yes
+  with_items:
+    - "{{ clients_to_add }}"
+
+- name: OpenVPN | Add Clients | Get .ovpn files (*-pkcs12.ovpn)
+  fetch:
+    src: "{{ openvpn_path_pki }}/ovpn/{{ item }}@{{ openvpn_server_common_name }}-pkcs12.ovpn"
+    dest: "{{ local_creds_folder }}/{{ item }}/"
+    flat: yes
+  with_items:
+    - "{{ clients_to_add }}"
+
+- name: OpenVPN | Add Clients | Get client PKCS#12 files
+  fetch:
+    src: "{{ openvpn_path_pki }}/ovpn/{{ item }}@{{ openvpn_server_common_name }}.p12"
+    dest: "{{ local_creds_folder }}/{{ item }}/"
+    flat: yes
+  with_items:
+    - "{{ clients_to_add }}"
+
+- name: OpenVPN | Add Clients | Get client CA cert
+  fetch:
+    src: "{{ openvpn_ca_cert }}"
+    dest: "{{ local_creds_folder }}/{{ item }}/"
+    flat: yes
+  with_items:
+    - "{{ clients_to_add }}"
+
+- name: OpenVPN | Add Clients | Get client certs
+  fetch:
+    src: "{{ openvpn_path_certs }}/{{ item }}@{{ openvpn_server_common_name }}.crt"
+    dest: "{{ local_creds_folder }}/{{ item }}/"
+    flat: yes
+  with_items:
+    - "{{ clients_to_add }}"
+
+- name: OpenVPN | Add Clients | Get client keys
+  fetch:
+    src: "{{ openvpn_path_keys }}/{{ item }}@{{ openvpn_server_common_name }}.key"
+    dest: "{{ local_creds_folder }}/{{ item }}/"
+    flat: yes
+  with_items:
+    - "{{ clients_to_add }}"
+
+- name: OpenVPN | Add Clients | Clear bash history
+  shell: cat /dev/null > ~/.bash_history && history -c
+  args:
+    executable: /bin/bash
+  ignore_errors: true

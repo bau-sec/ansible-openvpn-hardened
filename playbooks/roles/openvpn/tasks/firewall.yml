@@ -1,0 +1,8 @@
+---
+- name: Write persistent iptables rules
+  template:
+    src: etc_iptables_rules.v4.j2
+    dest: /etc/iptables/rules.v4
+    owner: root
+    group: root
+    mode: 0744

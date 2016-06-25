@@ -1,0 +1,6 @@
+- name: Add clients to OpenVPN's PKI
+# ========================================================
+  hosts: openvpn-vpn
+
+  roles:
+    - add_clients

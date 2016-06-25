@@ -1,0 +1,6 @@
+- name: Revoke client access
+# ========================================================
+  hosts: openvpn-vpn
+
+  roles:
+    - revoke_client

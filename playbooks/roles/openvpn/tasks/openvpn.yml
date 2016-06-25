@@ -1,0 +1,104 @@
+---
+- name: OpenVPN | Directories | Set the proper permissions {{ openvpn_path }}
+  file:
+    path: "{{ openvpn_path }}"
+    recurse: no
+    state: directory
+    owner: root
+    group: root
+    mode: 0700
+
+- name: OpenVPN | sysctl | Enable IPv4 traffic forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: 1
+
+- name: OpenVPN | Configuration | Copy OpenVPN server configuration file into place
+  template:
+    src: etc_openvpn_server.conf.j2
+    dest: "{{ openvpn_path }}/server.conf"
+
+- name: OpenVPN | Configuration | Copy OpenVPN UDP server configuration file into place
+  template:
+    src: etc_openvpn_server_udp.conf.j2
+    dest: "{{ openvpn_path }}/server-udp.conf"
+
+#Harden - Run as unprivileged user
+#         See: https://community.openvpn.net/openvpn/wiki/UnprivilegedUser
+- name: OpenVPN | Users | Create openvpn group
+  action: group name=openvpn
+
+- name: OpenVPN | Users | Create openvpn user
+  action: user name=openvpn group=openvpn shell=/usr/sbin/nologin home=/var/lib/openvpn
+
+- name: OpenVPN | Directories | Allow openvpn user access to pki files
+  file:
+    path: "{{ item }}"
+    recurse: no
+    state: directory
+    group: openvpn
+    mode: g+rx
+  with_items:
+    - "{{ openvpn_path }}"
+    - "{{ openvpn_path }}/easyrsa"
+    - "{{ openvpn_path }}/easyrsa/easyrsa3"
+    - "{{ openvpn_path }}/easyrsa/easyrsa3/pki"
+    - "{{ openvpn_path }}/easyrsa/easyrsa3/pki/private"
+    - "{{ openvpn_path }}/easyrsa/easyrsa3/pki/issued"
+
+- name: OpenVPN | Directories | Allow openvpn user to read required PKI files
+  file:
+    path: "{{ item }}"
+    state: file
+    group: openvpn
+    mode: g+r
+  with_items:
+    - "{{ openvpn_ca_cert }}"
+    - "{{ dhparams_location }}"
+    - "{{ openvpn_crl }}"
+
+- name: OpenVPN | Directories | Allow openvpn user to read required PKI files
+  file:
+    path: "{{ item }}"
+    state: file
+    owner: openvpn
+    group: openvpn
+  with_items:
+    - "{{ path_server_cert }}"
+    - "{{ path_server_key }}"
+    - "{{ openvpn_hmac_firewall }}"
+
+- name: OpenVPN | setcap | Ensure only root and openvpn user can run 'ip' and 'openvpn'
+  file:
+    path: "{{ item }}"
+    group: openvpn
+    mode: 0750
+  with_items:
+    - "/bin/ip"
+    - "/usr/sbin/openvpn"
+
+- name: OpenVPN | setcap | Set capabilities to allow /usr/sbin/openvpn to bind to reserved (0-1024) ports
+  shell: setcap 'cap_net_admin,cap_net_bind_service+eip' /usr/sbin/openvpn
+
+- name: OpenVPN | setcap | Set capabilities to allow /bin/ip perform network admin tasks
+  shell: setcap 'cap_net_admin+eip' /bin/ip
+
+- name: OpenVPN | systemd | Create service to make tunX devices as root prior to openvpn start
+  template:
+    src: etc_systemd_system_openvpn-tun.service.j2
+    dest: /etc/systemd/system/openvpn-tun.service
+
+- name: OpenVPN | systemd | Enable service to make tunX devices
+  shell: systemctl enable openvpn-tun.service
+
+- name: OpenVPN | systemd | Make override directories
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - "/etc/systemd/system/openvpn@.service.d"
+
+- name: OpenVPN | systemd | Use override file to better sandbox OpenVPN and run as openvpn user
+  template:
+    src: etc_systemd_system_openvpn@.service.d_override.conf.j2
+    dest: /etc/systemd/system/openvpn@.service.d/override.conf

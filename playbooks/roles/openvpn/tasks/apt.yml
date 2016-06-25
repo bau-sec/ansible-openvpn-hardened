@@ -1,0 +1,44 @@
+---
+- name: OpenVPN | apt | Ensure the APT cache is up to date
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: OpenVPN | apt | Add the official OpenVPN APT key
+  apt_key:
+    id: E158C569
+    data: "{{ item }}"
+  with_file: openvpn_signing.key
+  no_log: true
+
+- name: OpenVPN | apt | Add the official OpenVPN repository
+  apt_repository:
+    repo: 'deb https://swupdate.openvpn.net/apt {{ ansible_lsb.codename }} main'
+    state: present
+
+- name: OpenVPN | apt | Install required packages
+  apt:
+    name: "{{ item }}"
+  with_items: "{{ required_packages }}"
+
+- name: OpenVPN | apt | Remove non-required packages
+  apt:
+    name: "{{ item }}"
+    state: absent
+    purge: true
+  with_items: "{{ unwanted_packages }}"
+
+- name: OpenVPN | apt | Upgrade any out of date packages
+  apt:
+    upgrade: safe
+
+- name: OpenVPN | apt | Copy the unattended-upgrades templates to enable automatic security updates
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - { src: "10periodic",            dest: "/etc/apt/apt.conf.d" }
+    - { src: "50unattended-upgrades", dest: "/etc/apt/apt.conf.d" }

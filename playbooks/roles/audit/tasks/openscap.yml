@@ -1,0 +1,28 @@
+---
+- name: Audit | OpenSCAP | Install
+  apt:
+    name: "libopenscap8"
+
+- name: Audit | OpenSCAP | Install ubuntu-scap
+  git:
+    repo: https://github.com/GovReady/ubuntu-scap.git
+    accept_hostkey: True
+    remote: github
+    version: master
+    dest: "/usr/local/ubuntu-scap"
+
+- name: Audit | OpenSCAP | Run
+  shell: ./run_tests.sh
+  ignore_errors: true
+  no_log: true
+  args:
+    chdir: /usr/local/ubuntu-scap
+
+- name: Audit | OpenSCAP | Make local destination
+  local_action: file path="{{ local_creds_folder }}/" state=directory
+
+- name: Audit | OpenSCAP | Get report
+  fetch:
+    src: "/usr/local/ubuntu-scap/results.html"
+    dest: "{{ local_creds_folder }}/openscap_report.html"
+    flat: yes

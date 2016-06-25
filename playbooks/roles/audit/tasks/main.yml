@@ -1,0 +1,6 @@
+---
+- include_vars: ../../openvpn/defaults/main.yml
+
+- include: openscap.yml
+- include: lynis.yml
+- include: tiger.yml

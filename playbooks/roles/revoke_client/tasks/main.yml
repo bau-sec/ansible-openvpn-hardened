@@ -1,0 +1,34 @@
+---
+- include_vars: ../../openvpn/defaults/main.yml
+
+- name: OpenVPN | Revoke Client | Register the OpenVPN server common name
+  command: cat {{ openvpn_server_common_name_file }}
+  no_log: true
+  register: openvpn_server_common_name_result
+
+- set_fact:
+    openvpn_server_common_name: "{{ openvpn_server_common_name_result.stdout }}"
+
+- name: OpenVPN | Revoke Client | Revoke access for {{ client }}
+  expect:
+    command: ./easyrsa revoke {{ client }}@{{ openvpn_server_common_name }}
+    responses:
+      'Enter pass phrase for .*?:$': "{{ ca_password }}"
+    chdir: "{{ openvpn_path_easyrsa }}"
+  no_log: true
+
+- name: OpenVPN | Revoke Client | Rebuild CRL
+  expect:
+    command: ./easyrsa gen-crl
+    responses:
+      'Enter pass phrase for .*?:$': "{{ ca_password }}"
+    chdir: "{{ openvpn_path_easyrsa }}"
+    
+- name: OpenVPN | Directories | Fix CRL Permissions
+  file:
+    path: "{{ item }}"
+    state: file
+    group: openvpn
+    mode: g+r
+  with_items:
+    - "{{ openvpn_crl }}"

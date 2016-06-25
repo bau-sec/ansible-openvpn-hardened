@@ -1,0 +1,13 @@
+{% include "client_common.ovpn.j2" %}
+
+<ca>
+{{ openvpn_ca_contents.stdout }}
+</ca>
+
+<cert>
+{{ item[1].stdout }}
+</cert>
+
+<key>
+{{ item[2].stdout }}
+</key>

@@ -1,0 +1,14 @@
+[Unit]
+Description=OpenVPN create tun devices as root
+PartOf=openvpn.service
+Documentation=man:openvpn(8)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/openvpn --rmtun --dev tun0
+ExecStart=/usr/sbin/openvpn --rmtun --dev tun1
+ExecStart=/usr/sbin/openvpn --mktun --dev tun0 --dev-type tun --user openvpn --group openvpn
+ExecStart=/usr/sbin/openvpn --mktun --dev tun1 --dev-type tun --user openvpn --group openvpn
+
+[Install]
+WantedBy=multi-user.target

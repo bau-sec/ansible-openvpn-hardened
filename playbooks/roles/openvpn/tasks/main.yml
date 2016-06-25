@@ -1,0 +1,19 @@
+---
+- include: apt.yml
+- include: pki.yml
+- include: openvpn.yml
+- include: dnsmasq.yml
+- include: firewall.yml
+- include: harden_users.yml
+- include: harden_sshd.yml
+- include: harden_sysctl.yml
+- include: harden_umask.yml
+- include: harden_services.yml
+- include: harden_kernel.yml
+- include: harden_misc.yml
+
+- name: OpenVPN | Install | Clear bash history
+  shell: cat /dev/null > ~/.bash_history && history -c
+  args:
+    executable: /bin/bash
+  ignore_errors: true

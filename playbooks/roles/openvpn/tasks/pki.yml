@@ -1,0 +1,100 @@
+---
+- name: OpenVPN | PKI | EasyRSA Checkout
+  git:
+    repo: https://github.com/OpenVPN/easy-rsa.git
+    accept_hostkey: True
+    remote: github
+    version: master
+    dest: "{{ openvpn_path }}/easyrsa"
+
+- name: OpenVPN | PKI | Make local destination folder
+  local_action: file path={{ local_creds_folder }}/ state=directory
+
+- name: OpenVPN | PKI | Generate a random server common name
+  shell: grep -v -P "[\x80-\xFF]" /usr/share/dict/american-english-huge | sed -e "s/'//" | shuf -n 2 | xargs | sed -e 's/ /./g' | cut -c 1-64 > {{ openvpn_server_common_name_file }}
+  args:
+    creates: "{{ openvpn_server_common_name_file }}"
+
+- name: OpenVPN | PKI | Register the OpenVPN server common name
+  command: cat {{ openvpn_server_common_name_file }}
+  register: openvpn_server_common_name_result
+
+- name: OpenVPN | PKI | Generate CA password
+  shell: echo "$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c15)"
+  no_log: true
+  register: ca_password_result
+  when: ca_password is not defined
+
+- name: OpenVPN | Harden | Store CA password
+  local_action: template src=group_vars_all.yml.j2 dest={{ playbook_dir }}/group_vars/all.yml
+  when: ca_password is not defined
+
+- set_fact:
+    ca_password: "{{ ca_password_result.stdout }}"
+  when: ca_password is not defined
+
+- set_fact:
+    openvpn_server_common_name: "{{ openvpn_server_common_name_result.stdout }}"
+- set_fact:
+    path_server_key: "{{ openvpn_path_keys }}/server@{{ openvpn_server_common_name }}.key"
+    path_server_cert: "{{ openvpn_path_certs }}/server@{{ openvpn_server_common_name }}.crt"
+
+- name: OpenVPN | PKI | EasyRSA Link project
+  file:
+    src: ./easyrsa/easyrsa3/pki
+    dest: "{{ openvpn_path_pki }}"
+    owner: root
+    group: root
+    force: yes
+    state: link
+
+- name: OpenVPN | PKI | Deploy vars configuration
+  template:
+    src: etc_openvpn_easyrsa_easyrsa3_vars.j2
+    dest: "{{ openvpn_path_easyrsa }}/vars"
+    owner: root
+    group: root
+    mode: 0600
+
+- name: OpenVPN | PKI | Intialize PKI
+  shell: echo 'yes' | ./easyrsa init-pki
+  args:
+    chdir: "{{ openvpn_path_easyrsa }}"
+    creates: "{{ openvpn_path_keys }}"
+
+- name: OpenVPN | PKI | Build CA
+  expect:
+    command: ./easyrsa build-ca --req-cn ca@{{ openvpn_server_common_name }}
+    responses:
+      'Enter PEM pass phrase:$': "{{ ca_password }}"
+      'Verifying - Enter PEM pass phrase:$': "{{ ca_password }}"
+    chdir: "{{ openvpn_path_easyrsa }}"
+    creates: "{{ openvpn_path_easyrsa }}/pki/private/ca.key"
+
+- name: OpenVPN | PKI | Build CRL
+  expect:
+    command: ./easyrsa gen-crl
+    responses:
+      'Enter pass phrase for .*?:$': "{{ ca_password }}"
+    chdir: "{{ openvpn_path_easyrsa }}"
+    creates: "{{ openvpn_crl }}"
+
+- name: OpenVPN | PKI | Add server
+  expect:
+    command: ./easyrsa build-server-full server@{{ openvpn_server_common_name }} nopass --req-cn server@{{ openvpn_server_common_name }}
+    responses:
+      'Enter pass phrase for .*?:$': "{{ ca_password }}"
+    chdir: "{{ openvpn_path_easyrsa }}"
+    creates: "{{ path_server_key }}"
+
+- name: OpenVPN | PKI | Build ta.key
+  shell: openvpn --genkey --secret ta.key
+  args:
+    chdir: "{{ openvpn_path_easyrsa }}/pki"
+    creates: "{{ openvpn_hmac_firewall }}"
+
+- name: OpenVPN | PKI | Build dh.pem
+  shell: ./easyrsa gen-dh
+  args:
+    chdir: "{{ openvpn_path_easyrsa }}"
+    creates: "{{ dhparams_location }}"

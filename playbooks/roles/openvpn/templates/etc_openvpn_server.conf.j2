@@ -1,0 +1,6 @@
+dev tun0
+server {{ openvpn_tcp_subnet.mask }}
+push "dhcp-option DNS {{ openvpn_tcp_subnet.gateway }}"
+proto tcp
+port {{ openvpn_port }}
+{% include "etc_openvpn_server_common.j2" %}

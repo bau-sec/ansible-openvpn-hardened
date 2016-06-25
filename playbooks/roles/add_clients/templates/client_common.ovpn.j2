@@ -1,0 +1,20 @@
+client
+remote {{ openvpn_server }} {{ openvpn_port_udp }} udp
+remote {{ openvpn_server }} {{ openvpn_port }} tcp
+dev tun
+cipher {{ openvpn_cipher }}
+auth {{ openvpn_auth_digest }}
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+remote-cert-tls server
+verify-x509-name server@{{ openvpn_server_common_name }} name
+tls-version-min 1.2
+comp-lzo
+key-direction 1
+verb 3
+
+<tls-auth>
+{{ openvpn_hmac_firewall_contents.stdout }}
+</tls-auth>

@@ -1,0 +1,14 @@
+---
+- name: OpenVPN | Harden | Set default umask in /etc/login.defs
+  lineinfile:
+    dest: "/etc/login.defs"
+    regexp: "^UMASK"
+    line: "UMASK\t\t077"
+    state: present
+
+- name: OpenVPN | Harden | Set default umask in /etc/init.d/rc
+  lineinfile:
+    dest: "/etc/init.d/rc"
+    regexp: "^umask"
+    line: "umask 077"
+    state: present

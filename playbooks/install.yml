@@ -1,0 +1,22 @@
+- name: Install required software, configure and harden
+# ========================================================
+  hosts: openvpn-internet
+
+# You need a python 2 interpreter first, so skip gathering facts, then use
+# 'setup:' to get them after the python 2 interpreter has been installed.
+# See 'pre_tasks' below
+  gather_facts: no
+  pre_tasks:
+    - raw: apt-get -y install python-minimal
+    - setup:
+
+  roles:
+    - openvpn
+    - {role: add_clients, clients_to_add: "{{ openvpn_clients }}"}
+    - {role: audit, when: do_audit is defined and do_audit }
+
+  post_tasks:
+    - shell: sleep 2 && shutdown -r now "Restart for OpenVPN install"
+      async: 1
+      poll: 0
+      ignore_errors: true

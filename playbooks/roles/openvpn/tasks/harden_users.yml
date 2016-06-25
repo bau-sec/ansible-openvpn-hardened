@@ -1,0 +1,38 @@
+---
+- name: OpenVPN | Harden | Generate sudo username
+  shell: grep -v -P "[\x80-\xFF]" /usr/share/dict/american-english-huge | sed -e "s/'//" | shuf -n 1 | xargs | sed -e 's/ /-/g'
+  register: sudo_username
+
+- name: OpenVPN | Harden | Generate sudo user password
+  shell: echo "$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c15)"
+  register: sudo_user_password
+
+- name: OpenVPN | Harden | Create {{ sudo_username.stdout }} group
+  action: group name={{ sudo_username.stdout }}
+
+- name: OpenVPN | Harden | Create sudo user, '{{ sudo_username.stdout }}':'{{ sudo_user_password.stdout }}'
+  action: user name={{ sudo_username.stdout }} password={{ sudo_user_password.stdout | password_hash('sha512') }} shell=/bin/bash groups="{{ sudo_username.stdout }},sudo"
+
+# As recommended by https://help.ubuntu.com/lts/serverguide/user-management.html
+- name: OpenVPN | Harden | Remove world readable home directory permissions
+  file: path=/home/{{ sudo_username.stdout }} state=directory mode=750
+
+- name: OpenVPN | Harden | Add or update authorized key
+  action: authorized_key user={{ sudo_username.stdout }} key="{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+
+- name: OpenVPN | Harden | Store sudo user creds
+  local_action: template src=group_vars_openvpn-vpn.yml.j2 dest={{ playbook_dir }}/group_vars/openvpn-vpn.yml
+
+- name: OpenVPN | Harden | Disable root account
+  action: shell passwd -l root
+
+- name: OpenVPN | Harden | Set root shell to no login
+  action: user name=root shell=/usr/sbin/nologin
+
+# As recommended by LinEnum. File may not exist so ignore errors
+- name: OpenVPN | Harden | Only root can read root's .bash_history
+  file: path=/root/.bash_history mode=600
+  ignore_errors: true
+
+- name: OpenVPN | Harden | Disable root tty access
+  action: shell echo > /etc/securetty

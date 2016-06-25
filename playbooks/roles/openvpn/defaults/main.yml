@@ -1,0 +1,85 @@
+---
+openvpn_key_country:  "US"
+openvpn_key_province: "California"
+openvpn_key_city: "Beverly Hills"
+openvpn_key_org: "ACME CORPORATION"
+openvpn_key_ou: "Anvil Department"
+openvpn_key_email: "user@box.com"
+openvpn_clients:
+  - laptop
+  - phone
+
+openvpn_port: "443"
+openvpn_port_udp: "1194"
+openvpn_key_size: "2048"
+openvpn_cipher: "AES-256-CBC"
+openvpn_auth_digest: "SHA256"
+
+openvpn_udp_subnet:
+  mask: "10.9.0.0 255.255.255.0"
+  cidr: "10.9.0.0/24"
+  gateway: "10.9.0.1"
+
+openvpn_tcp_subnet:
+  mask: "10.8.0.0 255.255.255.0"
+  cidr: "10.8.0.0/24"
+  gateway: "10.8.0.1"
+
+upstream_dns_servers:
+  - 8.8.8.8
+  - 8.8.4.4
+
+openvpn_path: "/etc/openvpn"
+openvpn_path_pki: "{{ openvpn_path }}/pki"
+openvpn_path_keys: "{{ openvpn_path_pki }}/private"
+openvpn_path_certs: "{{ openvpn_path_pki }}/issued"
+openvpn_hmac_firewall: "{{ openvpn_path_pki }}/ta.key"
+openvpn_ca_cert: "{{ openvpn_path_pki }}/ca.crt"
+openvpn_path_easyrsa: "{{ openvpn_path }}/easyrsa/easyrsa3"
+dhparams_size: 2048
+dhparams_location: "{{ openvpn_path_pki }}/dh.pem"
+openvpn_crl: "{{ openvpn_path_pki }}/crl.pem"
+openvpn_server_common_name_file: "{{ openvpn_path }}/openvpn_server_common_name"
+
+openvpn_server: "{{ inventory_hostname }}"
+
+local_creds_folder: "{{ playbook_dir }}/../fetched_creds/{{ openvpn_server }}"
+
+required_packages:
+  # Needed for ansible module apt: upgrade
+  - aptitude
+  # Required for ansible 'expect' module
+  - python-pexpect
+  # Used to verify GPG signatures for mirrored packages
+  - gnupg
+  # Used to configure firewall rules
+  - iptables
+  # Make firewall rules persistent across reboots
+  - iptables-persistent
+  # Required for the apt_repository module
+  - python-software-properties
+  # Used for automatically installing security updates
+  - unattended-upgrades
+  - update-notifier-common
+  # Word List dictionary used by several roles to generate random data
+  - wamerican-huge
+  # File integrity
+  - debsums
+  - debsecan
+  # Package management
+  - apt-show-versions
+  - apt-listchanges
+  # Password requirements
+  - libpam-cracklib
+  - openvpn
+  - dnsmasq
+
+
+unwanted_packages:
+  - bind9-host
+  - libbind9-140
+  - exim4
+  - exim4-base
+  - exim4-config
+  - at
+  - lxcfs

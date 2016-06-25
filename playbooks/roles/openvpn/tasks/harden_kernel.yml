@@ -1,0 +1,25 @@
+---
+- name: OpenVPN | Harden Kernel | Disable various kernel modules
+  copy:
+    content: "install {{ item }} /bin/false" 
+    dest: /etc/modprobe.d/{{ item }}.conf
+  with_items:
+    - cramfs
+    - freevxfs
+    - jffs2
+    - hfs
+    - hfsplus
+    - squashfs
+    - udf
+    - dccp
+    - sctp
+    - rds
+    - tipc
+
+- name: OpenVPN | Harden Kernel | Disable bluetooth
+  copy:
+    content: "install net-pf-31 /bin/false\ninstall bluetooth /bin/false"
+    dest: /etc/modprobe.d/bluetooth.conf
+
+
+  

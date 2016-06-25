@@ -1,0 +1,8 @@
+---
+- name: OpenVPN | Harden Services | cron.allow
+  copy:
+    src: "etc_cron.allow"
+    dest: "/etc/cron.allow"
+    owner: root
+    group: root
+    mode: 0644

@@ -1,0 +1,5 @@
+{% include "client_common.ovpn.j2" %}
+
+ca ca.crt
+cert {{ item }}@{{ openvpn_server_common_name }}.crt
+key {{ item }}@{{ openvpn_server_common_name }}.key

@@ -1,0 +1,23 @@
+---
+- name: OpenVPN | Harden Misc | Disable core dumps for all users
+  lineinfile: 
+    line: "*     hard   core    0" 
+    dest: /etc/security/limits.conf
+    regexp: ^[\s]*\*[\s]+hard[\s]+core[\s]+([\d]+)
+    state: present
+    
+- name: OpenVPN | Harden Misc | Create /snap/bin with proper permissions since it's on path
+  file:
+    path: /snap/bin/
+    state: directory
+    mode: 0755
+    owner: root
+    group: root
+    
+# Necessary for Azure, this line seems to be missing in the 16.04 image. 
+# Absense of this line causes sudo to hang
+- name: OpenVPN | Harden Misc | Ensure hostname is in /etc/hosts
+  lineinfile:
+    line: "127.0.0.1 {{ ansible_hostname }}"
+    dest: /etc/hosts
+    state: present

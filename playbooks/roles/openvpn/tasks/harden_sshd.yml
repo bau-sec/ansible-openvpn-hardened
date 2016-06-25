@@ -1,0 +1,46 @@
+---
+- name: OpenVPN | Harden | sshd configuration
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "{{ item.reg }}"
+    line: "{{ item.line }}"
+    state: present
+    validate: '/usr/sbin/sshd -T -f %s'
+  with_items:
+    - { reg: '^(#)?PasswordAuthentication', line: 'PasswordAuthentication no'}
+    # V-38613 - The ssh daemon must not permit root logins
+    - { reg: '^(#)?PermitRootLogin', line: 'PermitRootLogin no'}
+    - { reg: '^(#)?AllowTcpForwarding', line: 'AllowTcpForwarding no'}
+    - { reg: '^(#)?Compression', line: 'Compression no'}
+    - { reg: '^(#)?LogLevel', line: 'LogLevel VERBOSE'}
+    - { reg: '^(#)?MaxAuthTries', line: 'MaxAuthTries 2'}
+    - { reg: '^(#)?MaxSessions', line: 'MaxSessions 2'}
+    - { reg: '^(#)?TCPKeepAlive', line: 'TCPKeepAlive no'}
+    - { reg: '^(#)?UsePrivilegeSeparation', line: 'UsePrivilegeSeparation SANDBOX'}
+    - { reg: '^(#)?X11Forwarding', line: 'X11Forwarding no'}
+    - { reg: '^(#)?AllowUsers', line: 'AllowUsers {{ sudo_username.stdout }}'}
+    # V-38607 - The SSH daemon must be configured to use only the SSHv2 protocol
+    - { reg: '^(#)?PrintLastLog', line: 'PrintLastLog yes'}
+    # V-38607 - The SSH daemon must be configured to use only the SSHv2 protocol
+    - { reg: '^(#)?Protocol \d', line: 'Protocol 2'}
+    # V-38614 - The SSH daemon must not allow authentication using an empty password
+    - { reg: '^(#)?PermitEmptyPasswords', line: 'PermitEmptyPasswords no'}
+    # V-38612 - The SSH daemon must not allow host-based authentication
+    - { reg: '^(#)?HostbasedAuthentication', line: 'HostbasedAuthentication no'}
+    # V-38608 - Set a timeout interval for idle ssh sessions
+    - { reg: '^(#)?ClientAliveInterval', line: 'ClientAliveInterval 300'}
+    # V-38610 - Set a timeout count on idle ssh sessions
+    - { reg: '^(#)?ClientAliveCountMax', line: 'ClientAliveCountMax 2'}
+    # V-38611 - The sshd daemon must ignore .rhosts files
+    - { reg: '^(#)?IgnoreRhosts', line: 'IgnoreRhosts yes'}
+    # V-38616 - The ssh daemon must not permit user environment settings
+    - { reg: '^(#)?PermitUserEnvironment', line: 'PermitUserEnvironment no'}
+    # V-38617 - The ssh daemon must be configured to use approved ciphers
+    - { reg: '^(#)?Ciphers', line: 'Ciphers aes256-cbc'}
+    - { reg: '^(#)?ListenAddress', line: 'ListenAddress {{ openvpn_tcp_subnet.gateway }}'}
+
+- name: OpenVPN | Harden | Add another ListenAddress to /etc/ssh/sshd_config
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    line: 'ListenAddress {{ openvpn_udp_subnet.gateway }}'
+    insertafter: "^ListenAddress {{ openvpn_tcp_subnet.gateway }}"

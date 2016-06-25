@@ -1,0 +1,22 @@
+---
+- name: Audit | tiger | Install
+  apt:
+    name: "tiger"
+
+- name: Audit | tiger | Run
+  shell: tiger -e
+
+- name: Audit | tiger | Make local destination
+  local_action: file path="{{ local_creds_folder }}/" state=directory
+
+- name: Audit | tiger | Get report name
+  shell: ls -1 /var/log/tiger/
+  register: tiger_report_path
+
+- name: Audit | tiger | Get report
+  fetch:
+    src: "/var/log/tiger/{{ item }}"
+    dest: "{{ local_creds_folder }}/tiger_report.txt"
+    flat: yes
+  with_items:
+    - "{{ tiger_report_path.stdout_lines }}"
