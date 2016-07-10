@@ -1,6 +1,9 @@
 [Unit]
 Description=OpenVPN create tun devices as root
+After=network.target
+{% if ansible_os_family == "Debian" %}
 PartOf=openvpn.service
+{% endif %}
 Documentation=man:openvpn(8)
 
 [Service]

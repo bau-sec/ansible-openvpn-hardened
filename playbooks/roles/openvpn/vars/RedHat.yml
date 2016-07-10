@@ -1,0 +1,57 @@
+---
+
+package_name_words: words
+package_name_auditd: audit
+
+path_bin_ip: /usr/sbin/ip
+path_bin_aide: /usr/sbin/aide
+path_persistent_iptables_rules: /etc/sysconfig/iptables
+path_dict: /usr/share/dict/words
+path_pam_system_auth: /etc/pam.d/system-auth
+path_pam_password_auth: /etc/pam.d/system-auth
+path_mac_config: /etc/selinux
+path_auditd_rules: /etc/audit/rules.d/audit.rules
+
+sudo_group: wheel
+path_grub_cfg: /boot/grub2/grub.cfg
+grub_mkconfig: grub2-mkconfig
+
+umask_files:
+  - { dest: "/etc/profile", regexp: "^umask", line: "umask 077" }
+
+deny_failed_login_auth_files:
+  - "{{ path_pam_system_auth }}"
+  - '/etc/pam.d/password-auth'
+
+deny_failed_login_account_files: "{{ deny_failed_login_auth_files }}"
+
+aide_db: /var/lib/aide.db.gz
+
+os_family_specific_pre:
+  - epel-release
+  - yum-cron
+  - yum-utils
+  - iptables-services
+
+audit_oscap_packages:
+  - openscap-scanner
+  - scap-security-guide
+
+oscap_policy_base: "/usr/share/xml/scap/ssg/content/"
+
+# Available profiles in ssg-centos7-ds.xml:
+#  content_profile_standard
+#  content_profile_pci-dss
+#  content_profile_rht-ccp
+#  content_profile_common
+#  content_profile_stig-rhel7-server-upstream
+
+oscap_reports:
+  - { name: stig,
+      profile: xccdf_org.ssgproject.content_profile_stig-rhel7-server-upstream,
+      policy: "{{ oscap_policy_base }}/ssg-centos7-ds.xml",
+      extra: " " }
+  - { name: dss,
+      profile: xccdf_org.ssgproject.content_profile_pci-dss,
+      policy: "{{ oscap_policy_base }}/ssg-centos7-ds.xml",
+      extra: " " }

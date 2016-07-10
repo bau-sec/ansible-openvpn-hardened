@@ -13,7 +13,7 @@
     - { reg: '^(#)?AllowTcpForwarding', line: 'AllowTcpForwarding no'}
     - { reg: '^(#)?Compression', line: 'Compression no'}
     - { reg: '^(#)?LogLevel', line: 'LogLevel VERBOSE'}
-    - { reg: '^(#)?MaxAuthTries', line: 'MaxAuthTries 2'}
+    - { reg: '^(#)?MaxAuthTries', line: 'MaxAuthTries 1'}
     - { reg: '^(#)?MaxSessions', line: 'MaxSessions 2'}
     - { reg: '^(#)?TCPKeepAlive', line: 'TCPKeepAlive no'}
     - { reg: '^(#)?UsePrivilegeSeparation', line: 'UsePrivilegeSeparation SANDBOX'}
@@ -30,14 +30,19 @@
     # V-38608 - Set a timeout interval for idle ssh sessions
     - { reg: '^(#)?ClientAliveInterval', line: 'ClientAliveInterval 300'}
     # V-38610 - Set a timeout count on idle ssh sessions
-    - { reg: '^(#)?ClientAliveCountMax', line: 'ClientAliveCountMax 2'}
+    # OpenSCAP report - CCP profile suggested value of 0
+    - { reg: '^(#)?ClientAliveCountMax', line: 'ClientAliveCountMax 0'}
     # V-38611 - The sshd daemon must ignore .rhosts files
     - { reg: '^(#)?IgnoreRhosts', line: 'IgnoreRhosts yes'}
     # V-38616 - The ssh daemon must not permit user environment settings
     - { reg: '^(#)?PermitUserEnvironment', line: 'PermitUserEnvironment no'}
     # V-38617 - The ssh daemon must be configured to use approved ciphers
-    - { reg: '^(#)?Ciphers', line: 'Ciphers aes256-cbc'}
+    - { reg: '^(#)?Ciphers', line: 'Ciphers aes256-ctr,aes256-cbc'}
     - { reg: '^(#)?ListenAddress', line: 'ListenAddress {{ openvpn_tcp_subnet.gateway }}'}
+    # OpenSCAP report - CCP profile suggested referencing warning banner
+    - { reg: '^(#)?Banner', line: 'Banner /etc/issue'}
+    # Suggested by lynis audit
+    - { reg: '^(#)?UseDNS', line: 'UseDNS no'}
 
 - name: OpenVPN | Harden | Add another ListenAddress to /etc/ssh/sshd_config
   lineinfile:

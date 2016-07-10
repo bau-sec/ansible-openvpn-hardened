@@ -1,8 +1,14 @@
 ---
-- name: Write persistent iptables rules
+- name: OpenVPN | Firewall | Write persistent iptables rules
   template:
     src: etc_iptables_rules.v4.j2
-    dest: /etc/iptables/rules.v4
+    dest: "{{ path_persistent_iptables_rules }}"
     owner: root
     group: root
     mode: 0744
+
+- name: OpenVPN | Firewall | Enable iptables service
+  service:
+    name: iptables
+    enabled: true
+  when: ansible_os_family == "RedHat"

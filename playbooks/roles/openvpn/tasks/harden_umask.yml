@@ -1,14 +1,8 @@
 ---
-- name: OpenVPN | Harden | Set default umask in /etc/login.defs
+- name: OpenVPN | Harden | Set default umask in {{ item.dest }}
   lineinfile:
-    dest: "/etc/login.defs"
-    regexp: "^UMASK"
-    line: "UMASK\t\t077"
+    dest: "{{ item.dest }}"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
     state: present
-
-- name: OpenVPN | Harden | Set default umask in /etc/init.d/rc
-  lineinfile:
-    dest: "/etc/init.d/rc"
-    regexp: "^umask"
-    line: "umask 077"
-    state: present
+  with_items: "{{ umask_files }}"

@@ -1,23 +1,85 @@
 ---
 - name: OpenVPN | Harden Misc | Disable core dumps for all users
-  lineinfile: 
-    line: "*     hard   core    0" 
+  lineinfile:
+    line: "*     hard   core    0"
     dest: /etc/security/limits.conf
     regexp: ^[\s]*\*[\s]+hard[\s]+core[\s]+([\d]+)
     state: present
-    
-- name: OpenVPN | Harden Misc | Create /snap/bin with proper permissions since it's on path
+
+- name: OpenVPN | Harden Misc | No group or other writable permissions on path
   file:
-    path: /snap/bin/
+    path: "{{ item }}"
+    mode: "go-w"
     state: directory
-    mode: 0755
-    owner: root
-    group: root
-    
-# Necessary for Azure, this line seems to be missing in the 16.04 image. 
+  with_items: "{{ ansible_env['PATH'].split(':') }}"
+
+- name: OpenVPN | Harden Misc | Add legal banner
+  lineinfile:
+    line: "Unauthorized access to this machine is prohibited."
+    dest: "{{ item }}"
+    state: present
+  with_items:
+    - /etc/issue
+    - /etc/issue.net
+
+- name: OpenVPN | Harden Misc | Check for cloud-init.conf
+  stat: path=/usr/lib/tmpfiles.d/cloud-init.conf
+  register: tmpfiles_cloud
+
+# Found on CentOS 7.2 digital ocean image. Should be a nop if these don't exist
+- name: OpenVPN | Harden Misc | Shared Library Permissions
+  file:
+    path: "{{ item }}"
+    mode: "go-w"
+    state: file
+  with_items:
+    - "/usr/lib/tmpfiles.d/cloud-init.conf"
+    - "/lib/tmpfiles.d/cloud-init.conf"
+  when: tmpfiles_cloud.stat.exists
+
+# TODO check if this file is created elsewhere (/etc/crontab, /etc/cron.daily, etc)
+# Ubuntu/Debian creates a cron job in /etc/cron.daily
+- name: OpenVPN | Harden Misc | Periodic run of AIDE via cron @ 04:05:00
+  copy:
+    content: "05 4 * * * root {{ path_bin_aide }} --check"
+    dest: /etc/cron.d/aide
+  when: ansible_os_family == "RedHat"
+
+- name: OpenVPN | Harden Misc | Ensure AIDE is run via cron
+  stat: path=/etc/cron.daily/aide
+  register: aide_cron
+  when: ansible_os_family == "Debian"
+
+- fail: msg="No daily cron job for running AIDE"
+  when: ansible_os_family == "Debian" and aide_cron.stat.exists == false
+
+# Necessary for Azure, this line seems to be missing in the 16.04 image.
 # Absense of this line causes sudo to hang
+# Since using backrefs, if no match -> no change. This prevents adding {{ ansible_hostname }} everytime
 - name: OpenVPN | Harden Misc | Ensure hostname is in /etc/hosts
   lineinfile:
-    line: "127.0.0.1 {{ ansible_hostname }}"
-    dest: /etc/hosts
+    dest: "/etc/hosts"
+    regexp: (127\.0\.0\.1)\s+((?!.*\s*{{ ansible_hostname }}\s*.*).*)
+    line: \1 \2 {{ ansible_hostname }}
     state: present
+    backrefs: true
+
+# Since using backrefs, if no match -> no change. This prevents adding audit=1 everytime
+- name: OpenVPN | Harden Misc | grub - Turn on auditing before auditd starts
+  lineinfile:
+    dest: "/etc/default/grub"
+    regexp: (GRUB_CMDLINE_LINUX=)"((?!.*audit=1.*).*)"
+    line: \1"\2 audit=1"
+    state: present
+    backrefs: true
+  register: updated_grub_cfg
+
+- name: OpenVPN | Harden Misc | grub - Regenerate grub.cfg
+  shell: "{{ grub_mkconfig }} -o {{ path_grub_cfg }}"
+  when: updated_grub_cfg.changed
+
+- name: OpenVPN | Harden Misc | Grub permissions
+  file:
+    path: "{{ path_grub_cfg }}"
+    mode: "0600"
+    state: file

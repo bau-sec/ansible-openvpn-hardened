@@ -25,6 +25,9 @@ openvpn_tcp_subnet:
   cidr: "10.8.0.0/24"
   gateway: "10.8.0.1"
 
+dns_user: dns
+dns_group: dns
+
 upstream_dns_servers:
   - 8.8.8.8
   - 8.8.4.4
@@ -36,7 +39,7 @@ openvpn_path_certs: "{{ openvpn_path_pki }}/issued"
 openvpn_hmac_firewall: "{{ openvpn_path_pki }}/ta.key"
 openvpn_ca_cert: "{{ openvpn_path_pki }}/ca.crt"
 openvpn_path_easyrsa: "{{ openvpn_path }}/easyrsa/easyrsa3"
-dhparams_size: 2048
+dhparams_size: "{{ openvpn_key_size }}"
 dhparams_location: "{{ openvpn_path_pki }}/dh.pem"
 openvpn_crl: "{{ openvpn_path_pki }}/crl.pem"
 openvpn_server_common_name_file: "{{ openvpn_path }}/openvpn_server_common_name"
@@ -46,40 +49,28 @@ openvpn_server: "{{ inventory_hostname }}"
 local_creds_folder: "{{ playbook_dir }}/../fetched_creds/{{ openvpn_server }}"
 
 required_packages:
-  # Needed for ansible module apt: upgrade
-  - aptitude
+  - sudo
   # Required for ansible 'expect' module
-  - python-pexpect
+  #- python-pexpect
+  - python-pip
+  - python-virtualenv
+  # Required for easy-rsa install in PKI tasks and audit tasks
+  - git
   # Used to verify GPG signatures for mirrored packages
   - gnupg
   # Used to configure firewall rules
   - iptables
-  # Make firewall rules persistent across reboots
-  - iptables-persistent
-  # Required for the apt_repository module
-  - python-software-properties
-  # Used for automatically installing security updates
-  - unattended-upgrades
-  - update-notifier-common
   # Word List dictionary used by several roles to generate random data
-  - wamerican-huge
-  # File integrity
-  - debsums
-  - debsecan
-  # Package management
-  - apt-show-versions
-  - apt-listchanges
-  # Password requirements
-  - libpam-cracklib
+  - "{{ package_name_words }}"
+  - "{{ package_name_auditd }}"
+  - aide
   - openvpn
   - dnsmasq
-
 
 unwanted_packages:
   - bind9-host
   - libbind9-140
-  - exim4
-  - exim4-base
-  - exim4-config
   - at
   - lxcfs
+  - rpcbind
+  - nfs-common

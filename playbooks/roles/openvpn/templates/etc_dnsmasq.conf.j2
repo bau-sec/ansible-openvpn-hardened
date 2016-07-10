@@ -83,8 +83,8 @@ server={{ item }}
 
 # If you want dnsmasq to change uid and gid to something other
 # than the default, edit the following lines.
-#user=
-#group=
+user={{ dns_user }}
+group={{ dns_group }}
 
 # If you want dnsmasq to listen for DHCP and DNS requests only on
 # specified interfaces (and the loopback) give the name of the
@@ -110,7 +110,7 @@ listen-address=127.0.0.1,{{ openvpn_tcp_subnet.gateway }},{{ openvpn_udp_subnet.
 # want dnsmasq to really bind only the interfaces it is listening on,
 # uncomment this option. About the only time you may need this is when
 # running another nameserver on the same machine.
-bind-interfaces
+#bind-interfaces
 
 # If you don't want dnsmasq to read /etc/hosts, uncomment the
 # following line.

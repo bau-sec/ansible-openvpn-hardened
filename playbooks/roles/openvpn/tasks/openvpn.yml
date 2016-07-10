@@ -1,13 +1,4 @@
 ---
-- name: OpenVPN | Directories | Set the proper permissions {{ openvpn_path }}
-  file:
-    path: "{{ openvpn_path }}"
-    recurse: no
-    state: directory
-    owner: root
-    group: root
-    mode: 0700
-
 - name: OpenVPN | sysctl | Enable IPv4 traffic forwarding
   sysctl:
     name: net.ipv4.ip_forward
@@ -23,6 +14,7 @@
     src: etc_openvpn_server_udp.conf.j2
     dest: "{{ openvpn_path }}/server-udp.conf"
 
+# TODO make openvpn_user/group a variable referenced here and systemd (openvpn and tmpfiles conf)
 #Harden - Run as unprivileged user
 #         See: https://community.openvpn.net/openvpn/wiki/UnprivilegedUser
 - name: OpenVPN | Users | Create openvpn group
@@ -30,6 +22,15 @@
 
 - name: OpenVPN | Users | Create openvpn user
   action: user name=openvpn group=openvpn shell=/usr/sbin/nologin home=/var/lib/openvpn
+
+- name: OpenVPN | Directories | Set the proper permissions {{ openvpn_path }}
+  file:
+    path: "{{ openvpn_path }}"
+    recurse: no
+    state: directory
+    owner: root
+    group: openvpn
+    mode: 0750
 
 - name: OpenVPN | Directories | Allow openvpn user access to pki files
   file:
@@ -39,7 +40,6 @@
     group: openvpn
     mode: g+rx
   with_items:
-    - "{{ openvpn_path }}"
     - "{{ openvpn_path }}/easyrsa"
     - "{{ openvpn_path }}/easyrsa/easyrsa3"
     - "{{ openvpn_path }}/easyrsa/easyrsa3/pki"
@@ -74,22 +74,30 @@
     group: openvpn
     mode: 0750
   with_items:
-    - "/bin/ip"
+    - "{{ path_bin_ip }}"
     - "/usr/sbin/openvpn"
 
 - name: OpenVPN | setcap | Set capabilities to allow /usr/sbin/openvpn to bind to reserved (0-1024) ports
   shell: setcap 'cap_net_admin,cap_net_bind_service+eip' /usr/sbin/openvpn
+  changed_when: false
 
-- name: OpenVPN | setcap | Set capabilities to allow /bin/ip perform network admin tasks
-  shell: setcap 'cap_net_admin+eip' /bin/ip
+- name: OpenVPN | setcap | Set capabilities to allow "{{ path_bin_ip }}" perform network admin tasks
+  shell: setcap 'cap_net_admin+eip' {{ path_bin_ip }}
+  changed_when: false
 
 - name: OpenVPN | systemd | Create service to make tunX devices as root prior to openvpn start
   template:
     src: etc_systemd_system_openvpn-tun.service.j2
     dest: /etc/systemd/system/openvpn-tun.service
 
-- name: OpenVPN | systemd | Enable service to make tunX devices
-  shell: systemctl enable openvpn-tun.service
+- name: OpenVPN | systemd | Enable services
+  service:
+    name: "{{ item }}"
+    enabled: true
+  with_items:
+    - openvpn-tun.service
+    - openvpn@server.service
+    - openvpn@server-udp.service
 
 - name: OpenVPN | systemd | Make override directories
   file:
@@ -102,3 +110,8 @@
   template:
     src: etc_systemd_system_openvpn@.service.d_override.conf.j2
     dest: /etc/systemd/system/openvpn@.service.d/override.conf
+
+- name: OpenVPN | systemd | Use systemd-tmpfiles to create /run/openvpn on startup
+  template:
+    src: etc_tmpfiles.d_openvpn.conf
+    dest: /etc/tmpfiles.d/openvpn.conf

@@ -1,7 +1,8 @@
 ---
 - name: Audit | OpenSCAP | Install
-  apt:
-    name: "libopenscap8"
+  package:
+    name: "{{ item }}"
+  with_items: "{{ audit_oscap_packages }}"
 
 - name: Audit | OpenSCAP | Install ubuntu-scap
   git:
@@ -9,20 +10,28 @@
     accept_hostkey: True
     remote: github
     version: master
-    dest: "/usr/local/ubuntu-scap"
+    dest: "{{ oscap_policy_base }}"
+  when: ansible_os_family == "Debian"
 
 - name: Audit | OpenSCAP | Run
-  shell: ./run_tests.sh
+  shell: >
+    oscap xccdf eval
+    --profile {{ item.profile }}
+    --check-engine-results --oval-results
+    --results ~/oscap_results_{{ item.name }}.xml
+    --report ~/oscap_report_{{ item.name }}.html
+    {{ item.extra }}
+    {{ item.policy }}
   ignore_errors: true
   no_log: true
-  args:
-    chdir: /usr/local/ubuntu-scap
+  with_items: "{{ oscap_reports }}"
 
 - name: Audit | OpenSCAP | Make local destination
   local_action: file path="{{ local_creds_folder }}/" state=directory
 
 - name: Audit | OpenSCAP | Get report
   fetch:
-    src: "/usr/local/ubuntu-scap/results.html"
-    dest: "{{ local_creds_folder }}/openscap_report.html"
+    src: "~/oscap_report_{{ item.name }}.html"
+    dest: "{{ local_creds_folder }}/oscap_report_{{ item.name }}.html"
     flat: yes
+  with_items: "{{ oscap_reports }}"

@@ -1,0 +1,76 @@
+---
+- name: OpenVPN | package | Ensure the APT cache is up to date
+  apt:
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+- name: OpenVPN | package | Remove non-required packages
+  package:
+    name: "{{ item }}"
+    state: absent
+  with_items: "{{ unwanted_packages }}"
+
+- name: OpenVPN | package | Install {{ ansible_os_family }} specific packages
+  package:
+    name: "{{ item }}"
+  with_items: "{{ os_family_specific_pre }}"
+
+- name: OpenVPN | package | Add the official OpenVPN APT key
+  apt_key:
+    id: E158C569
+    data: "{{ item }}"
+  with_file: openvpn_signing.key
+  no_log: true
+  when: ansible_os_family == "Debian"
+
+- name: OpenVPN | package | Add the official OpenVPN repository
+  apt_repository:
+    repo: 'deb https://swupdate.openvpn.net/apt {{ ansible_lsb.codename }} main'
+    state: present
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+- name: OpenVPN | package | Install required packages
+  package:
+    name: "{{ item }}"
+  with_items: "{{ required_packages }}"
+
+- name: OpenVPN | package | apt - upgrade any out of date packages
+  apt:
+    upgrade: safe
+  when: ansible_os_family == "Debian"
+
+- name: OpenVPN | package | yum - upgrade any out of date packages
+  yum:
+    name: '*'
+    state: latest
+    update_cache: yes
+  when: ansible_os_family == "RedHat"
+
+- name: OpenVPN | package | Copy the unattended-upgrades templates to enable automatic security updates
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - { src: "10periodic",            dest: "/etc/apt/apt.conf.d" }
+    - { src: "50unattended-upgrades", dest: "/etc/apt/apt.conf.d" }
+  when: ansible_os_family == "Debian"
+
+- name: OpenVPN | package | Configure yum-cron
+  lineinfile:
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}" 
+    dest: /etc/yum/yum-cron.conf
+    state: present
+  with_items:
+    - {regexp: '^update_cmd\s*=\s*', line: "update_cmd = security"}
+    - {regexp: '^apply_updates\s*=\s*', line: "apply_updates = yes"}
+  when: ansible_os_family == "RedHat"
+    
+- name: OpenVPN | package | Install pexpect via pip
+  pip:
+    name: "pexpect"
+    version: "3.3"
