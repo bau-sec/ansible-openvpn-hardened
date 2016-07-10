@@ -1,8 +1,9 @@
 ---
 - name: Audit | tiger | Install
-  apt:
+  package:
     name: "tiger"
 
+# TODO Maybe add '-H' to get an HTML report instead
 - name: Audit | tiger | Run
   shell: tiger -e
 

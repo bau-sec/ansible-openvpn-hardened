@@ -6,3 +6,18 @@
     owner: root
     group: root
     mode: 0644
+
+# Note aide package on debian requires parts of exim, so can't uninstall it. just disable.
+- name: OpenVPN | Harden Services | Disable exim
+  service:
+    name: exim4
+    state: stopped
+    enabled: false
+  when: ansible_distribution in ['Debian']
+
+- name: OpenVPN | Harden Services | Disable postfix
+  service:
+    name: postfix
+    state: stopped
+    enabled: false
+  when: ansible_distribution in ['Ubuntu', 'CentOS']

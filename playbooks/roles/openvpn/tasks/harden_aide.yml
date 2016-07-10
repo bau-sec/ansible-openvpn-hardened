@@ -1,0 +1,19 @@
+---
+- name: OpenVPN | AIDE | Check for DB
+  stat: path={{ aide_db }}
+  register: aide_db
+
+- name: OpenVPN | AIDE | Initialize AIDE DB
+  shell: aideinit
+  changed_when: false
+  when: ansible_os_family == "Debian" and aide_db.stat.exists == false
+
+- name: OpenVPN | AIDE | Initialize AIDE DB
+  shell: aide --init
+  changed_when: false
+  when: ansible_os_family == "RedHat" and aide_db.stat.exists == false
+  
+- name: OpenVPN | AIDE | Initialize AIDE DB
+  shell: mv /var/lib/aide/aide.db.new.gz /var/lib/aide.db.gz
+  changed_when: false
+  when: ansible_os_family == "RedHat" and aide_db.stat.exists == false

@@ -3,9 +3,19 @@
 
 Other Ansible playbooks and roles exist to automate the installation of OpenVPN, but none configure the OpenVPN server to run entirely as an unprivileged user [as described in the OpenVPN docs](https://community.openvpn.net/openvpn/wiki/UnprivilegedUser) or use *systemd* to sandbox the OpenVPN server process.
 
-*ansible-openvpn-hardened* also includes a playbook to run audits against the created server that independently verify the steps taken to harden the server. The supported auditing tools include [*OpenSCAP*](https://www.open-scap.org/) (more specifically [*ubuntu-scap*](https://github.com/GovReady/ubuntu-scap)), [*lynis*](https://cisofy.com/lynis/) and [*tiger*](http://www.nongnu.org/tiger/). Example output from these tools can be reviewed on the project wiki.
+*ansible-openvpn-hardened* also includes a playbook to run audits against the created server that independently verify the steps taken to harden the server. The supported auditing tools include [*OpenSCAP*](https://www.open-scap.org/) (with assistance from [*ubuntu-scap*](https://github.com/GovReady/ubuntu-scap) on Debian/Ubuntu), [*lynis*](https://cisofy.com/lynis/) and [*tiger*](http://www.nongnu.org/tiger/). Example output from these tools can be reviewed on the project wiki.
 
-Currently, a fresh install of Ubuntu 16.04 is the expected starting point, though other Linux distros may be added in the future depending on interest.
+## Supported Targets
+
+The intended target is a fresh instantiation of an image running on a cloud provider like [Digital Ocean](https://www.digitalocean.com/?refcode=5ab3eb461bcb) (warning: referal link) or Microsoft's [Azure](https://azure.microsoft.com/). Physical boxes or local VMs should work as well assuming they are accessible over SSH, but haven't been tested.
+
+The following Linux distros are supported:
+
+- CentOS 7.2 x64 (And by extension RHEL 7.2 should work, but this hasn't been tested)
+- Ubuntu 16.04 x64
+- Debian 8.5 x64
+
+Other distros and versions may work but no promises. If support for another distro is desired, submit an issue ticket. Pull requests are always welcome.
 
 # Hardening
 Some of the steps taken to harden the server:
@@ -15,6 +25,8 @@ Some of the steps taken to harden the server:
 - Firewall configured to only allow SSH access on the VPN LAN
   - The point of this script is to create a VPN tunnel; why not use that VPN to protect the SSH daemon as well? This not only makes the server more secure, it also eliminates the hundreds of daily log entries created by automated scripts trolling the internet for unsecured SSH ports. This makes the system logs easier to sift through.
 - Numerous modifications to `/etc/ssh/sshd_config` for hardening. See [`harden_sshd.yml`](playbooks/roles/openvpn/tasks/harden_sshd.yml)
+- [*auditd*](http://linux.die.net/man/8/auditd) is installed and configured to monitor administrative actions and/or suspicious activity. See [`harden_auditd.yml`](playbooks\roles\openvpn\tasks\harden_auditd.yml)
+- [*AIDE*](http://aide.sourceforge.net/) is a file and directory integrity checker. It's installed, configured and an initial baseline is taken using `aide --init` just before the playbook finishes. See [`harden_aide.yml`](playbooks\roles\openvpn\tasks\harden_aide.yml)
 
 ### *systemd* sandboxing
 There are lots of *systemd* detractors out there, but it's the default init system for Debian, Ubuntu and Red Hat. It does provide some useful features for sandboxing services. See [`etc_systemd_system_openvpn@.service.d_override.conf.j2`](playbooks/roles/openvpn/templates/etc_systemd_system_openvpn@.service.d_override.conf.j2) for how some of these features are enabled.
@@ -57,21 +69,19 @@ None of the audit tools used by the `audit.yml` playbook give the server a perfe
   - Partitioning can be tricky on cloud providers and the creation of partitions can be difficult to script without risking data loss. This is probably best left to the OS image creater or installer of the OS.
 - mount options such as `noexec`, `nosuid`, and `nodev` for /tmp, /dev/shm, etc.
   - This will likely be addressed in future versions. Pull requests welcome.
-- Auditing and logging services
-  - My current use-case is to spin up a VPN when I know I'm going to need it and then blow it away when I've returned from travel. As a result I'm not spending much time reviewing logs. This becomes more important for long running instances. This may be addressed in future versions. Pull requests welcome.
 - Password requirements
   - The created server should only have one account able to login over SSH and it will be protected with a randomly generated password and pub/priv key pair. Unless you're using this server for other purposes with users who login regularly, setting requirements for password minimum length, complexity, expirations, etc. seems like box-checking, not adding additional security.
-  - *pam-cracklib* is installed if password requirements are necessary for your setup
+  - The *pam* module *pwquality* is installed if password requirements are necessary for your setup
 
 # Quick start
 
 > Warning: **Potential to lock yourself out of the target box.** One of the hardening steps configures SSH to only listen on the VPN interfaces. Make sure you have a backup method to access the server in case the VPN doesn't come up. For example, Digital Ocean provides console access through their admin panel.
 
-> Requirement: **Ubuntu 16.04 Server** is the only supported OS at the moment. Debian and Red Hat family distros may be added in the future.
-
 > Requirement: **Currently a static IP is required** This may change in future releases with support for dynamic IP addresses. Static IPs are available on both Digital Ocean and Azure.
 
-Install the required packages if you don't have them already
+> Suggestion: **Use a fresh install or image as a target** This playbook should work well, but issues will be less likely and more easily resolved if you can start over easily. Also, given the potential for locking yourself out of the box, you don't want to lose access to import things that may be on an existing server.
+
+Install the required packages if you don't have them already. On Ubuntu or Debian use the commands below. On other OSes, sub-in the appropriate package manager.
 
     sudo apt-get install python-pip git
     sudo pip install ansible
@@ -80,13 +90,13 @@ Get *ansible-openvpn-hardened*
 
     git clone https://github.com/bau-sec/ansible-openvpn-hardened.git
 
-Create a target machine using your cloud provider of choice. The Ubuntu 16.04 images on Digital Ocean and Microsoft's Azure have been tested and should work well. Cloud providers are ideal because you can easily spin up a test box to try things out on and blow it away when you're done or when you no longer need the VM. Other cloud providers, a local VM or box should work fine as well but haven't been tested.
+Create a target machine using your cloud provider of choice. The CentOS 7.2, Ubuntu 16.04 and Debian 8.5 images on Digital Ocean and Microsoft's Azure have been tested and should work well. Cloud providers are ideal because you can easily spin up a test box to try things out on and delete the instance when you're done or when you no longer need the VM. Other cloud providers, a local VM or box should work fine as well but haven't been tested.
 
-Make sure you can ssh into the target machine that will become your OpenVPN box. If using a cloud provider they should provide you with login credentials and instructions. For example, to log into the `user` account on a box with the ip `192.168.1.10` use
+Make sure you can ssh into the target machine that will become your OpenVPN box. If using a cloud provider they should provide you with login credentials and instructions. For example, to log into the `root` account on a box with the ip `192.168.1.10` use
 
-    ssh user@192.168.1.10
+    ssh root@192.168.1.10
 
-Copy the example Ansible inventory to edit for your setup. `inventory.example` has example values for different ssh configurations
+Copy the example Ansible inventory to edit for your setup. `inventory.example` has example values for different ssh configurations. If *vim* isn't your editor of choice, substitute a different editor.
 
     cd ansible-openvpn-hardened/
     cp inventory.example inventory
@@ -96,7 +106,7 @@ Run the install playbook
 
     ansible-playbook playbooks/install.yml
 
-Assuming the above steps were successful, you should now have directory called `fetched_creds`. This contains the openvpn configuration files and private keys that can be distributed to your clients.
+The playbook should run for **5-30 minutes** depending on how good your target box is at hashing and crypto operations. Assuming the above steps were successful, you should now have directory called `fetched_creds`. This contains the openvpn configuration files and private keys that can be distributed to your clients.
 
 Try connecting to the newly created OpenVPN server
 

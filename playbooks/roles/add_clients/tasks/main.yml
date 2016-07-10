@@ -5,6 +5,7 @@
   command: cat {{ openvpn_server_common_name_file }}
   no_log: true
   register: openvpn_server_common_name_result
+  changed_when: false
 
 - set_fact:
     openvpn_server_common_name: "{{ openvpn_server_common_name_result.stdout }}"
@@ -40,6 +41,7 @@
   no_log: true
   register: client_pk_passwords
   with_items: "{{ clients_to_add }}"
+  changed_when: false
 
 - name: OpenVPN | Add Clients | Build Clients
   expect:
@@ -65,23 +67,27 @@
   command: cat {{ openvpn_ca_cert }}
   no_log: true
   register: openvpn_ca_contents
+  changed_when: false
 
 - name: OpenVPN | Add Clients | Register HMAC firewall key contents
   command: cat {{ openvpn_hmac_firewall }}
   no_log: true
   register: openvpn_hmac_firewall_contents
+  changed_when: false
 
 - name: OpenVPN | Add Clients | Register client key contents
   command: cat {{ openvpn_path_keys }}/{{ item }}@{{ openvpn_server_common_name }}.key
   with_items: "{{ clients_to_add }}"
   no_log: true
   register: openvpn_client_keys
+  changed_when: false
 
 - name: OpenVPN | Add Clients | Register client certificate contents
   command: cat {{ openvpn_path_certs }}/{{ item }}@{{ openvpn_server_common_name }}.crt
   with_items: "{{ clients_to_add }}"
   no_log: true
   register: openvpn_client_certs
+  changed_when: false
 
 - name: OpenVPN | Add Clients | Build client configs (.ovpn files; pki embedded)
   template:
@@ -190,3 +196,4 @@
   args:
     executable: /bin/bash
   ignore_errors: true
+  changed_when: false

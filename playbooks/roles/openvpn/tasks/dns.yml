@@ -1,0 +1,21 @@
+---
+- name: OpenVPN | dns | Create {{ dns_group }} group
+  group:
+    name: "{{ dns_group }}"
+
+- name: OpenVPN | dns | Create {{ dns_user }} user
+  user: 
+    name: "{{ dns_user }}"
+    group: "{{ dns_group }}" 
+    shell: /usr/sbin/nologin 
+    createhome: no
+
+- name: OpenVPN | dns | Generate dnsmasq configuration file
+  template:
+    src: etc_dnsmasq.conf.j2
+    dest: /etc/dnsmasq.conf
+
+- name: OpenVPN | dns | systemd - enable service
+  service:
+    name: dnsmasq
+    enabled: true

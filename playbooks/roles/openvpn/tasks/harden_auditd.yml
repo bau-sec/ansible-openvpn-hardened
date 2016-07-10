@@ -1,0 +1,166 @@
+---
+- name: OpenVPN | Harden auditd | Start Service
+  service:
+    name: auditd
+    state: started
+    enabled: true
+
+- name: OpenVPN | Harden auditd | Configure
+  lineinfile:
+    dest: /etc/audit/auditd.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+  with_items:
+    - { regexp: '^(#)?disk_error_action[\s]*=', line: 'disk_error_action = halt'}
+    - { regexp: '^(#)?disk_full_action[\s]*=', line: 'disk_full_action = halt'}
+    # Halt the computer if only 75MB is left on disk
+    - { regexp: '^(#)?space_left[\s]*=', line: 'space_left = 75'}
+    - { regexp: '^(#)?space_left_action[\s]*=', line: 'space_left_action = halt'}
+    - { regexp: '^(#)?admin_space_left_action[\s]*=', line: 'admin_space_left_action = halt'}
+
+- name: OpenVPN | Harden auditd | Forward auditd records to syslog
+  lineinfile:
+    dest: /etc/audisp/plugins.d/syslog.conf
+    regexp: "^(#)?active"
+    line: "active = yes"
+    state: present
+
+- name: OpenVPN | Harden auditd | Add rules
+  lineinfile:
+    dest: "{{ path_auditd_rules }}"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+  with_items:
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+-F[\s]+arch=b32.*-S[\s]+adjtimex[\s]+.*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b32 -S adjtimex -k audit_time_rules'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+-F[\s]+arch=b64.*-S[\s]+adjtimex[\s]+.*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b64 -S adjtimex -k audit_time_rules'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+-F[\s]+arch=b32.*-S[\s]+settimeofday[\s]+.*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b32 -S settimeofday -k audit_time_rules'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+-F[\s]+arch=b64.*-S[\s]+settimeofday[\s]+.*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b64 -S settimeofday -k audit_time_rules'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+-F[\s]+arch=b32.*-S[\s]+stime[\s]+.*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b32 -S stime -k audit_time_rules'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+-F[\s]+arch=b32.*-S[\s]+clock_settime[\s]+.*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b32 -S clock_settime -k audit_time_rules'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+-F[\s]+arch=b64.*-S[\s]+clock_settime[\s]+.*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b64 -S clock_settime -k audit_time_rules'}
+    - { regexp: '^[\s]*-w[\s]+\/etc\/localtime[\s]+-p[\s]+\b([rx]*w[rx]*a[rx]*|[rx]*a[rx]*w[rx]*)\b.*-k[\s]+[\S]+[\s]*$',
+        line: '-w /etc/localtime -p wa -k audit_time_rules'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b32[\s]+)(?:.*-S[\s]+chmod[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b32 -S chmod -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b64[\s]+)(?:.*-S[\s]+chmod[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b64 -S chmod  -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b32[\s]+)(?:.*-S[\s]+chown[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b32 -S chown -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b64[\s]+)(?:.*-S[\s]+chown[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b64 -S chown -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b32[\s]+)(?:.*-S[\s]+fchmod[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b32 -S fchmod -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b64[\s]+)(?:.*-S[\s]+fchmod[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b64 -S fchmod -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b32[\s]+)(?:.*-S[\s]+fchmodat[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b32 -S fchmodat -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b64[\s]+)(?:.*-S[\s]+fchmodat[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b64 -S fchmodat -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b32[\s]+)(?:.*-S[\s]+fchown[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b32 -S fchown -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b64[\s]+)(?:.*-S[\s]+fchown[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b64 -S fchown -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b32[\s]+)(?:.*-S[\s]+fchownat[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b32 -S fchownat -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b64[\s]+)(?:.*-S[\s]+fchownat[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b64 -S fchownat -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b32[\s]+)(?:.*-S[\s]+fremovexattr[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b32 -S fremovexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b64[\s]+)(?:.*-S[\s]+fremovexattr[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b64 -S fremovexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b32[\s]+)(?:.*-S[\s]+fsetxattr[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b32 -S fsetxattr -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b64[\s]+)(?:.*-S[\s]+fsetxattr[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b64 -S fsetxattr -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b32[\s]+)(?:.*-S[\s]+lchown[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b32 -S lchown -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b64[\s]+)(?:.*-S[\s]+lchown[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b64 -S lchown -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b32[\s]+)(?:.*-S[\s]+lremovexattr[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b32 -S lremovexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b64[\s]+)(?:.*-S[\s]+lremovexattr[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b64 -S lremovexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b32[\s]+)(?:.*-S[\s]+lsetxattr[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b32 -S lsetxattr -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b64[\s]+)(?:.*-S[\s]+lsetxattr[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b64 -S lsetxattr -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b32[\s]+)(?:.*-S[\s]+removexattr[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b32 -S removexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b64[\s]+)(?:.*-S[\s]+removexattr[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b64 -S removexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b32[\s]+)(?:.*-S[\s]+setxattr[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b32 -S setxattr -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^[\s]*-a[\s]+always,exit[\s]+(?:.*-F[\s]+arch=b64[\s]+)(?:.*-S[\s]+setxattr[\s]+)(?:.*-F\s+auid>=1000[\s]+)(?:.*-F\s+auid!=4294967295[\s]+).*-k[\s]+[\S]+[\s]*$',
+        line: '-a always,exit -F arch=b64 -S setxattr -F auid>=1000 -F auid!=4294967295 -k perm_mod'}
+    - { regexp: '^\-w[\s]+/etc/group[\s]+\-p[\s]+\b([rx]*w[rx]*a[rx]*|[rx]*a[rx]*w[rx]*)\b[\s+]\-k[\s]+\w+[\s]*$',
+        line: '-w /etc/group -p wa -k audit_rules_usergroup_modification'}
+    - { regexp: '^\-w[\s]+/etc/passwd[\s]+\-p[\s]+\b([rx]*w[rx]*a[rx]*|[rx]*a[rx]*w[rx]*)\b[\s]+\-k[\s]+\w+[\s]*$',
+        line: '-w /etc/passwd -p wa -k audit_rules_usergroup_modification'}
+    - { regexp: '^\-w[\s]+/etc/gshadow[\s]+\-p[\s]+\b([rx]*w[rx]*a[rx]*|[rx]*a[rx]*w[rx]*)\b[\s]+\-k[\s]+\w+[\s]*$',
+        line: '-w /etc/gshadow -p wa -k audit_rules_usergroup_modification'}
+    - { regexp: '^\-w[\s]+/etc/shadow[\s]+\-p[\s]+\b([rx]*w[rx]*a[rx]*|[rx]*a[rx]*w[rx]*)\b[\s]+\-k[\s]+\w+[\s]*$',
+        line: '-w /etc/shadow -p wa -k audit_rules_usergroup_modification'}
+    - { regexp: '^\-w[\s]+/etc/security/opasswd[\s]+\-p[\s]+\b([rx]*w[rx]*a[rx]*|[rx]*a[rx]*w[rx]*)\b[\s]+\-k[\s]+\w+[\s]*$',
+        line: '-w /etc/security/opasswd -p wa -k audit_rules_usergroup_modification'}
+    - { regexp: '^\-a\s+always,exit\s+(\-F\s+arch=(b64|b32)\s+)?\-S\s+sethostname\s+\-S\s+setdomainname\s+\-k\s+[-\w]+\s*$',
+        line: '-a always,exit -F arch=b64 -S sethostname -S setdomainname -k audit_rules_networkconfig_modification'}
+    - { regexp: '^\-w[\s]+/etc/issue[\s]+\-p[\s]+\b([rx]*w[rx]*a[rx]*|[rx]*a[rx]*w[rx]*)\b[\s]+\-k[\s]+[-\w]+[\s]*$',
+        line: '-w /etc/issue -p wa -k audit_rules_networkconfig_modification'}
+    - { regexp: '^\-w[\s]+/etc/issue\.net[\s]+\-p[\s]+\b([rx]*w[rx]*a[rx]*|[rx]*a[rx]*w[rx]*)\b[\s]+\-k[\s]+[-\w]+[\s]*$',
+        line: '-w /etc/issue.net -p wa -k audit_rules_networkconfig_modification'}
+    - { regexp: '^\-w[\s]+/etc/hosts[\s]+\-p[\s]+\b([rx]*w[rx]*a[rx]*|[rx]*a[rx]*w[rx]*)\b[\s]+\-k[\s]+[-\w]+[\s]*$',
+        line: '-w /etc/hosts -p wa -k audit_rules_networkconfig_modification'}
+    - { regexp: '^\-w[\s]+/etc/sysconfig/network[\s]+\-p[\s]+\b([rx]*w[rx]*a[rx]*|[rx]*a[rx]*w[rx]*)\b[\s]+\-k[\s]+[-\w]+[\s]*$',
+        line: '-w /etc/sysconfig/network -p wa -k audit_rules_networkconfig_modification'}
+    - { regexp: '^\-w[\s]+{{ path_mac_config }}[\s]+\-p[\s]+\b([rx]*w[rx]*a[rx]*|[rx]*a[rx]*w[rx]*)\b[\s]+\-k[\s]+[-\w]+[\s]*$',
+        line: '-w {{ path_mac_config }} -p wa -k MAC-policy'}
+    - { regexp: '^\-w\s+/var/run/utmp\s+\-p\s+wa\s+\-k\s+[-\w]+\s*$',
+        line: '-w /var/run/utmp -p wa -k session'}
+    - { regexp: '^\-w\s+/var/log/btmp\s+\-p\s+wa\s+\-k\s+[-\w]+\s*$',
+        line: '-w /var/log/btmp -p wa -k session'}
+    - { regexp: '^\-w\s+/var/log/wtmp\s+\-p\s+wa\s+\-k\s+[-\w]+\s*$',
+        line: '-w /var/log/wtmp -p wa -k session'}
+    - { regexp: '^\-a\s+always,exit\s+\-F\s+arch=b32\s+?\-S\s+creat\s+\-S\s+open\s+\-S\s+openat\s+\-S\s+open_by_handle_at\s+\-S\s+truncate\s+\-S\s+ftruncate\s+\-F\s+exit=\-EACCES\s+\-F\s+auid>=1000\s+\-F\s+auid!=4294967295\s+\-k\s+[-\w]+\s*$',
+        line: '-a always,exit -F arch=b32 -S creat -S open -S openat -S open_by_handle_at -S truncate -S ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=4294967295 -k access'}
+    - { regexp: '^\-a\s+always,exit\s+\-F\s+arch=b32\s+?\-S\s+creat\s+\-S\s+open\s+\-S\s+openat\s+\-S\s+open_by_handle_at\s+\-S\s+truncate\s+\-S\s+ftruncate\s+\-F\s+exit=\-EPERM\s+\-F\s+auid>=1000\s+\-F\s+auid!=4294967295\s+\-k\s+[-\w]+\s*$',
+        line: '-a always,exit -F arch=b32 -S creat -S open -S openat -S open_by_handle_at -S truncate -S ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=4294967295 -k access'}
+    - { regexp: '^\-a\s+always,exit\s+\-F\s+arch=b64\s+?\-S\s+creat\s+\-S\s+open\s+\-S\s+openat\s+\-S\s+open_by_handle_at\s+\-S\s+truncate\s+\-S\s+ftruncate\s+\-F\s+exit=\-EACCES\s+\-F\s+auid>=1000\s+\-F\s+auid!=4294967295\s+\-k\s+[-\w]+\s*$',
+        line: '-a always,exit -F arch=b64 -S creat -S open -S openat -S open_by_handle_at -S truncate -S ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=4294967295 -k access'}
+    - { regexp: '^\-a\s+always,exit\s+\-F\s+arch=b64\s+?\-S\s+creat\s+\-S\s+open\s+\-S\s+openat\s+\-S\s+open_by_handle_at\s+\-S\s+truncate\s+\-S\s+ftruncate\s+\-F\s+exit=\-EPERM\s+\-F\s+auid>=1000\s+\-F\s+auid!=4294967295\s+\-k\s+[-\w]+\s*$',
+        line: '-a always,exit -F arch=b64 -S creat -S open -S openat -S open_by_handle_at -S truncate -S ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=4294967295 -k access'}
+    - { regexp: '^\-a\s+always,exit\s+(\-F\s+arch=(b64|b32)\s+)?\-S\s+mount\s+\-F\s+auid>=1000\s+\-F\s+auid!=4294967295\s+\-k\s+[-\w]+\s*$',
+        line: '-a always,exit -F arch=b64 -S mount -F auid>=1000 -F auid!=4294967295 -k export'}
+    - { regexp: '^\-a\s+always,exit\s+(\-F\s+arch=(b64|b32)\s+)?\-S\s+rmdir\s+\-S\s+unlink\s+\-S\s+unlinkat\s+\-S\s+rename\s+\-S\s+renameat\s+\-F\s+auid>=1000\s+\-F\s+auid!=4294967295\s+\-k\s+[-\w]+\s*$',
+        line: '-a always,exit -F arch=b64 -S rmdir -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=4294967295 -k delete'}
+    - { regexp: '^\-w[\s]+/etc/sudoers[\s]+\-p[\s]+\b([rx]*w[rx]*a[rx]*|[rx]*a[rx]*w[rx]*)\b[\s]+\-k[\s]+[-\w]+[\s]*$',
+        line: '-w /etc/sudoers -p wa -k actions'}
+    - { regexp: '^\-w[\s]+/usr/sbin/insmod[\s]+\-p[\s]+\b([raw]*x[raw]*)\b[\s]+\-k[\s]+[-\w]+[\s]*$',
+        line: '-w /usr/sbin/insmod -p x -k modules'}
+    - { regexp: '^\-w[\s]+/usr/sbin/rmmod[\s]+\-p[\s]+\b([raw]*x[raw]*)\b[\s]+\-k[\s]+[-\w]+[\s]*$',
+        line: '-w /usr/sbin/rmmod -p x -k modules'}
+    - { regexp: '^\-w\s+/usr/sbin/modprobe[\s]+\-p[\s]+\b([raw]*x[raw]*)\b[\s]+\-k[\s]+[-\w]+[\s]*$',
+        line: '-w /usr/sbin/modprobe -p x -k modules'}
+    - { regexp: '^\-a\s+always,exit\s+(\-F\s+arch=(b64|b32)\s+)?\-S\s+init_module\s+\-S\s+delete_module\s+\-k\s+[-\w]+\s*$',
+        line: '-a always,exit -F arch=b64 -S init_module -S delete_module -k modules'}
+
+- name: OpenVPN | Harden auditd | Find all setuid/setgid applications
+  shell: find / -xdev -type f -perm -4000 -o -type f -perm -2000 2>/dev/null
+  changed_when: false
+  register: found_setuid_bins
+
+- name: OpenVPN | Harden auditd | Monitor all setuid/setgid applications
+  lineinfile:
+    dest: /etc/audit/rules.d/audit.rules
+    line: "-a always,exit -F path={{ item }} -F perm=x -F auid>=1000 -F auid!=4294967295 -k privileged"
+    regexp: '^\-a\s+always,exit\s+\-F\s+path={{ item }}\s+\-F\s+perm=x\s+\-F\s+auid>=1000\s+\-F\s+auid!=4294967295\s+\-k\s+privileged\s*$'
+    state: present
+  with_items: "{{ found_setuid_bins.stdout_lines }}"

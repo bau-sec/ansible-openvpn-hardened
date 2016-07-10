@@ -1,0 +1,62 @@
+---
+
+package_name_words: wamerican-huge
+package_name_auditd: auditd
+
+path_bin_ip: /bin/ip
+path_bin_aide: /usr/bin/aide
+path_persistent_iptables_rules: /etc/iptables/rules.v4
+path_dict: /usr/share/dict/american-english-huge
+path_pam_system_auth: /etc/pam.d/common-auth
+path_pam_password_auth: /etc/pam.d/common-password
+path_mac_config: /etc/apparmor
+path_auditd_rules: /etc/audit/audit.rules
+
+sudo_group: sudo
+path_grub_cfg: /boot/grub/grub.cfg
+grub_mkconfig: grub-mkconfig
+
+umask_files:
+  - { dest: "/etc/login.defs", regexp: "^UMASK", line: "UMASK\t\t077" }
+  - { dest: "/etc/init.d/rc", regexp: "^umask", line: "umask 077" }
+
+deny_failed_login_auth_files:
+  - "{{ path_pam_system_auth }}"
+
+deny_failed_login_account_files:
+  - "/etc/pam.d/common-account"
+
+aide_db: /var/lib/aide/aide.db
+
+os_family_specific_pre:
+  # Needed for ansible module apt: upgrade
+  - aptitude
+  # Make firewall rules persistent across reboots
+  - iptables-persistent
+  # Make sure https repos can be added (needed for OpenVPN repo)
+  - apt-transport-https
+  - ca-certificates
+  # Required for the apt_repository module
+  - python-software-properties
+  # Used for automatically installing security updates
+  - unattended-upgrades
+  # File integrity
+  - debsums
+  - debsecan
+  # Package management
+  - apt-show-versions
+  - apt-listchanges
+  # Password policy
+  - libpam-pwquality
+  - aide-common
+
+audit_oscap_packages:
+  - libopenscap8
+
+oscap_policy_base: "/usr/local/ubuntu-scap"
+
+oscap_reports:
+  - { name: default,
+      profile: xccdf_ubuntu_profile_default,
+      policy: "{{ oscap_policy_base }}/ubuntu-xccdf.xml",
+      extra: "--cpe {{ oscap_policy_base }}/ubuntu-cpe.xml" }

@@ -1,12 +1,18 @@
 [Unit]
-After=openvpn-tun.service
+After=openvpn-tun.service systemd-tmpfiles-setup.service
 Before=dnsmasq.service
 
 [Service]
 User=openvpn
 Group=openvpn
-RuntimeDirectory=openvpn
+{% if ansible_distribution in ['Ubuntu'] and ansible_distribution_version in ['16.04'] %}
+{#
+  Clearing doesn't seem to be okay on Debian 8.5 (systemd 215) or CentOS 7.2 (systemd 219)
+  But it's okay on Ubuntu 16.04 (systemd 229)
+  TODO Maybe key off of systemd version instead? custom 'set_fact' step on start?
+#}
 CapabilityBoundingSet=
+{% endif %}
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 ProtectSystem=full
 ProtectHome=true
@@ -16,5 +22,12 @@ InaccessibleDirectories=/boot /home /lost+found /media /mnt /opt /root /snap /sr
 # Leave /usr/sbin accessible
 InaccessibleDirectories=/usr/bin /usr/games /usr/include /usr/local /usr/share /usr/src
 # Leave /var/run accessible
-InaccessibleDirectories=/var/backups /var/cache /var/crash /var/lib /var/local /var/log /var/mail /var/opt /var/snap /var/spool
+InaccessibleDirectories=/var/backups /var/cache  /var/lib /var/local /var/log /var/mail /var/opt  /var/spool
+{% if ansible_distribution in ['Ubuntu'] and ansible_distribution_version in ['16.04'] %}
+{#
+  Debian 8.5 (systemd 215) doesn't like directories that don't exist being included.
+  These dirs only exist on ubuntu
+#}
+InaccessibleDirectories=/var/crash /var/snap
+{% endif %}
 ReadOnlyDirectories=/lib /lib64 /usr/lib
