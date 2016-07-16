@@ -1,28 +1,54 @@
 ---
-# TODO write to disk somewhere so this step won't keep creating users on subsequent runs
+- set_fact:
+    sudo_user_comment: "ansible-openvpn-hardened sudo user"
+
+- name: OpenVPN | Harden | Check for existing user
+  shell: "grep \"{{ sudo_user_comment }}\" /etc/passwd | awk -F: '{print $1}'"
+  changed_when: false
+  register: sudo_user_check
+  failed_when: false
+
 - name: OpenVPN | Harden | Generate sudo username
   shell: grep -v -P "[\x80-\xFF]" {{ path_dict }} | sed -e "s/'//" | shuf -n 1 | xargs | sed -e 's/ /-/g'
-  register: sudo_username
+  register: generated_sudo_username
+  when: sudo_user_check.stdout == ""
+
+- set_fact: 
+    sudo_username: "{{ sudo_user_check.stdout }}"
+  when: sudo_user_check.stdout != ""
+
+- set_fact:
+    sudo_username: "{{ generated_sudo_username.stdout }}"
+  when: sudo_user_check.stdout == ""
 
 - name: OpenVPN | Harden | Generate sudo user password
   shell: echo "$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c15)"
   register: sudo_user_password
+  when: sudo_user_check.stdout == ""
 
-- name: OpenVPN | Harden | Create {{ sudo_username.stdout }} group
-  action: group name={{ sudo_username.stdout }}
+- name: OpenVPN | Harden | Create {{ sudo_username }} group
+  group: 
+    name: "{{ sudo_username }}"
 
-- name: OpenVPN | Harden | Create sudo user, '{{ sudo_username.stdout }}':'{{ sudo_user_password.stdout }}'
-  action: user name={{ sudo_username.stdout }} password={{ sudo_user_password.stdout | password_hash('sha512') }} shell=/bin/bash groups="{{ sudo_username.stdout }},{{ sudo_group }}"
+- name: OpenVPN | Harden | Create sudo user, '{{ sudo_username }}'
+  user: 
+    name: "{{ sudo_username }}"
+    password: "{{ sudo_user_password.stdout | password_hash('sha512') }}" 
+    shell: "/bin/bash" 
+    groups: "{{ sudo_username }},{{ sudo_group }}"
+    comment: "{{ sudo_user_comment }}"
+  when: sudo_user_check.stdout == ""
 
 # As recommended by https://help.ubuntu.com/lts/serverguide/user-management.html
 - name: OpenVPN | Harden | Remove world readable home directory permissions
-  file: path=/home/{{ sudo_username.stdout }} state=directory mode=750
+  file: path=/home/{{ sudo_username }} state=directory mode=750
 
 - name: OpenVPN | Harden | Add or update authorized key
-  action: authorized_key user={{ sudo_username.stdout }} key="{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+  action: authorized_key user={{ sudo_username }} key="{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
 
 - name: OpenVPN | Harden | Store sudo user creds
   local_action: template src=group_vars_openvpn-vpn.yml.j2 dest={{ playbook_dir }}/group_vars/openvpn-vpn.yml
+  when: sudo_user_check.stdout == ""
 
 - name: OpenVPN | Harden | Disable root account
   action: shell passwd -l root
@@ -41,3 +67,4 @@
 
 - name: OpenVPN | Harden | Disable root tty access
   action: shell echo > /etc/securetty
+  changed_when: false
