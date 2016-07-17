@@ -6,7 +6,7 @@
 
 - name: OpenVPN | Configuration | Copy OpenVPN server configuration files into place
   template:
-    src: etc_openvpn_server_common.j2
+    src: etc_openvpn_server.conf.j2
     dest: "{{ openvpn_path }}/{{ item.proto }}-{{ item.port }}.conf"
   with_items: "{{ openvpn_instances }}"
 

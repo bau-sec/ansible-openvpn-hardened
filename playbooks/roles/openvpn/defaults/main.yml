@@ -9,8 +9,6 @@ openvpn_clients:
   - laptop
   - phone
 
-openvpn_port: "443"
-openvpn_port_udp: "1194"
 openvpn_key_size: "2048"
 openvpn_cipher: "AES-256-CBC"
 openvpn_auth_digest: "SHA256"
