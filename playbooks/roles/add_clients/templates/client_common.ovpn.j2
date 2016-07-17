@@ -1,6 +1,9 @@
 client
-remote {{ openvpn_server }} {{ openvpn_port_udp }} udp
-remote {{ openvpn_server }} {{ openvpn_port }} tcp
+
+{% for instance in openvpn_instances %}
+remote {{ openvpn_server }} {{ instance.port }} {{ instance.proto }}
+{% endfor %}
+
 dev tun
 cipher {{ openvpn_cipher }}
 auth {{ openvpn_auth_digest }}
