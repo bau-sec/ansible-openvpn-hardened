@@ -15,15 +15,23 @@ openvpn_key_size: "2048"
 openvpn_cipher: "AES-256-CBC"
 openvpn_auth_digest: "SHA256"
 
-openvpn_udp_subnet:
-  mask: "10.9.0.0 255.255.255.0"
-  cidr: "10.9.0.0/24"
-  gateway: "10.9.0.1"
-
-openvpn_tcp_subnet:
-  mask: "10.8.0.0 255.255.255.0"
-  cidr: "10.8.0.0/24"
-  gateway: "10.8.0.1"
+openvpn_instances:
+  - {
+      proto: udp,
+      port: 1194,
+      mask: "10.9.0.0 255.255.255.0",
+      cidr: "10.9.0.0/24",
+      gateway: "10.9.0.1",
+  }
+  # Uncomment below to listen on TCP 443. This will look like normal SSL/TLS traffic
+  # and will be more likely to get through restrictive firewalls.
+  # - {
+  #     proto: tcp,
+  #     port: 443,
+  #     mask: "10.8.0.0 255.255.255.0",
+  #     cidr: "10.8.0.0/24",
+  #     gateway: "10.8.0.1",
+  # }
 
 dns_user: dns
 dns_group: dns

@@ -18,7 +18,7 @@
     - { reg: '^(#)?TCPKeepAlive', line: 'TCPKeepAlive no'}
     - { reg: '^(#)?UsePrivilegeSeparation', line: 'UsePrivilegeSeparation SANDBOX'}
     - { reg: '^(#)?X11Forwarding', line: 'X11Forwarding no'}
-    - { reg: '^(#)?AllowUsers', line: 'AllowUsers {{ sudo_username.stdout }}'}
+    - { reg: '^(#)?AllowUsers', line: 'AllowUsers {{ sudo_username }}'}
     # V-38607 - The SSH daemon must be configured to use only the SSHv2 protocol
     - { reg: '^(#)?PrintLastLog', line: 'PrintLastLog yes'}
     # V-38607 - The SSH daemon must be configured to use only the SSHv2 protocol
@@ -38,14 +38,13 @@
     - { reg: '^(#)?PermitUserEnvironment', line: 'PermitUserEnvironment no'}
     # V-38617 - The ssh daemon must be configured to use approved ciphers
     - { reg: '^(#)?Ciphers', line: 'Ciphers aes256-ctr,aes256-cbc'}
-    - { reg: '^(#)?ListenAddress', line: 'ListenAddress {{ openvpn_tcp_subnet.gateway }}'}
     # OpenSCAP report - CCP profile suggested referencing warning banner
     - { reg: '^(#)?Banner', line: 'Banner /etc/issue'}
     # Suggested by lynis audit
     - { reg: '^(#)?UseDNS', line: 'UseDNS no'}
 
-- name: OpenVPN | Harden | Add another ListenAddress to /etc/ssh/sshd_config
+- name: OpenVPN | Harden | Add VPN interfaces using 'ListenAddress' to /etc/ssh/sshd_config
   lineinfile:
     dest: /etc/ssh/sshd_config
-    line: 'ListenAddress {{ openvpn_udp_subnet.gateway }}'
-    insertafter: "^ListenAddress {{ openvpn_tcp_subnet.gateway }}"
+    line: 'ListenAddress {{ item.gateway }}'
+  with_items: "{{ openvpn_instances }}"

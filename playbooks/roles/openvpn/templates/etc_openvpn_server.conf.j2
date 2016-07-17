@@ -1,6 +1,27 @@
-dev tun0
-server {{ openvpn_tcp_subnet.mask }}
-push "dhcp-option DNS {{ openvpn_tcp_subnet.gateway }}"
-proto tcp
-port {{ openvpn_port }}
-{% include "etc_openvpn_server_common.j2" %}
+dev tun-{{ item.proto }}-{{ item.port }}
+server {{ item.mask }}
+push "dhcp-option DNS {{ item.gateway }}"
+proto {{ item.proto }}
+port {{ item.port }}
+
+ca {{ openvpn_ca_cert }}
+cert {{ path_server_cert }}
+key {{ path_server_key }}
+dh {{ dhparams_location }}
+crl-verify {{ openvpn_crl }}
+push "redirect-gateway def1"
+
+# Fix for the Windows 10 DNS leak described here:
+# https://community.openvpn.net/openvpn/ticket/605
+push block-outside-dns
+
+remote-cert-tls client
+keepalive 10 120
+tls-auth {{ openvpn_hmac_firewall }} 0
+cipher {{ openvpn_cipher }}
+auth {{ openvpn_auth_digest }}
+tls-version-min 1.2
+comp-lzo
+persist-key
+persist-tun
+verb 0

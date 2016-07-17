@@ -96,7 +96,7 @@ group={{ dns_group }}
 # Or which to listen on by address (remember to include 127.0.0.1 if
 # you use this.)
 #listen-address=
-listen-address=127.0.0.1,{{ openvpn_tcp_subnet.gateway }},{{ openvpn_udp_subnet.gateway }}
+listen-address=127.0.0.1{% for instance in openvpn_instances %},{{ instance.gateway }}{% endfor %}
 
 # If you want dnsmasq to provide only DNS service on an interface,
 # configure it as shown above, and then use the following line to
