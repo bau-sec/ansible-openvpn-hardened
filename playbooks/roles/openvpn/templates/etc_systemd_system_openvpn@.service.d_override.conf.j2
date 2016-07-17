@@ -1,10 +1,20 @@
 [Unit]
-After=openvpn-tun.service systemd-tmpfiles-setup.service
+After=network.target systemd-tmpfiles-setup.service
 Before=dnsmasq.service
+# Need systemd-tmpfiles for /run/openvpn directory which contains PID and status files
+Wants=systemd-tmpfiles-setup.service
+Requires=network.target
 
 [Service]
 User=openvpn
 Group=openvpn
+# Only apply user and group to ExecStart. ExecStartPre/Post need root to manage devices
+PermissionsStartOnly=true
+ExecStartPre=/usr/sbin/openvpn --mktun --dev tun-%i --dev-type tun --user openvpn --group openvpn
+# Annoying race condition, openvpn doesn't create the pid file fast enough for
+# systemd. The sleep makes systemd wait before checking for the pid file
+ExecStartPost=/bin/sleep 0.1
+ExecStopPost=/usr/sbin/openvpn --rmtun --dev tun-%i
 {% if ansible_distribution in ['Ubuntu'] and ansible_distribution_version in ['16.04'] %}
 {#
   Clearing doesn't seem to be okay on Debian 8.5 (systemd 215) or CentOS 7.2 (systemd 219)
@@ -27,6 +37,7 @@ InaccessibleDirectories=/var/backups /var/cache  /var/lib /var/local /var/log /v
 {#
   Debian 8.5 (systemd 215) doesn't like directories that don't exist being included.
   These dirs only exist on ubuntu
+  TODO Maybe build list of directories
 #}
 InaccessibleDirectories=/var/crash /var/snap
 {% endif %}

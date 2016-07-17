@@ -81,11 +81,6 @@
   shell: setcap 'cap_net_admin+eip' {{ path_bin_ip }}
   changed_when: false
 
-- name: OpenVPN | systemd | Create service to make tunX devices as root prior to openvpn start
-  template:
-    src: etc_systemd_system_openvpn-tun.service.j2
-    dest: /etc/systemd/system/openvpn-tun.service
-
 - name: OpenVPN | systemd | Make override directories
   file:
     path: "{{ item }}"
@@ -102,13 +97,6 @@
   template:
     src: etc_tmpfiles.d_openvpn.conf
     dest: /etc/tmpfiles.d/openvpn.conf
-
-- name: OpenVPN | systemd | Enable services
-  service:
-    name: "{{ item }}"
-    enabled: true
-  with_items:
-    - openvpn-tun.service
 
 - name: OpenVPN | systemd | Enable services
   service:
