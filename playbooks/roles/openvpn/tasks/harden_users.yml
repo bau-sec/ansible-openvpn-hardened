@@ -41,7 +41,7 @@
 
 # As recommended by https://help.ubuntu.com/lts/serverguide/user-management.html
 - name: OpenVPN | Harden | Remove world readable home directory permissions
-  file: path=/home/{{ sudo_username }} state=directory mode=750
+  file: path=/home/{{ sudo_username }} state=directory mode=0750
 
 - name: OpenVPN | Harden | Add or update authorized key
   action: authorized_key user={{ sudo_username }} key="{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
@@ -52,6 +52,7 @@
 
 - name: OpenVPN | Harden | Disable root account
   action: shell passwd -l root
+  changed_when: false
 
 - name: OpenVPN | Harden | Set root shell to no login
   action: user name=root shell=/usr/sbin/nologin
@@ -62,7 +63,7 @@
 
 # As recommended by LinEnum. File may not exist so ignore errors
 - name: OpenVPN | Harden | Only root can read root's .bash_history
-  file: path=/root/.bash_history mode=600
+  file: path=/root/.bash_history mode=0600
   when: root_history.stat.exists
 
 - name: OpenVPN | Harden | Disable root tty access
