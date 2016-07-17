@@ -8,22 +8,27 @@
 -A INPUT -i lo -j ACCEPT
 -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 # Allow SSH connections on the VPN
--A INPUT -p tcp -d {{ openvpn_udp_subnet.cidr }} --dport 22 -j ACCEPT
--A INPUT -p tcp -d {{ openvpn_tcp_subnet.cidr }} --dport 22 -j ACCEPT
+{% for instance in openvpn_instances %}
+-A INPUT -p tcp -d {{ instance.cidr }} --dport 22 -j ACCEPT
+{% endfor %}
 # Allow VPN connections to dnsmasq
--A INPUT -p udp -d {{ openvpn_udp_subnet.gateway }} --dport 53 -j ACCEPT
--A INPUT -p udp -d {{ openvpn_tcp_subnet.gateway }} --dport 53 -j ACCEPT
+{% for instance in openvpn_instances %}
+-A INPUT -p udp -d {{ instance.gateway }} --dport 53 -j ACCEPT
+{% endfor %}
 # Allow connections to the VPN
--A INPUT -p tcp --dport {{ openvpn_port }} -j ACCEPT
--A INPUT -p udp --dport {{ openvpn_port_udp }} -j ACCEPT
+{% for instance in openvpn_instances %}
+-A INPUT -p {{ instance.proto }} --dport {{ instance.port }} -j ACCEPT
+{% endfor %}
 -A FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
--A FORWARD -s {{ openvpn_tcp_subnet.cidr }} -j ACCEPT
--A FORWARD -s {{ openvpn_udp_subnet.cidr }} -j ACCEPT
+{% for instance in openvpn_instances %}
+-A FORWARD -s {{ instance.cidr }} -j ACCEPT
+{% endfor %}
 COMMIT
 *nat
 :PREROUTING ACCEPT [0:0]
 :POSTROUTING ACCEPT [0:0]
 :OUTPUT ACCEPT [0:0]
--A POSTROUTING -s {{ openvpn_tcp_subnet.cidr }} -o {{ ansible_default_ipv4.interface }} -j MASQUERADE
--A POSTROUTING -s {{ openvpn_udp_subnet.cidr }} -o {{ ansible_default_ipv4.interface }} -j MASQUERADE
+{% for instance in openvpn_instances %}
+-A POSTROUTING -s {{ instance.cidr }} -o {{ ansible_default_ipv4.interface }} -j MASQUERADE
+{% endfor %}
 COMMIT

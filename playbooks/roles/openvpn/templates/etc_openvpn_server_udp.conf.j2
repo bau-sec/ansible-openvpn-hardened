@@ -1,6 +1,0 @@
-dev tun1
-server {{ openvpn_udp_subnet.mask }}
-push "dhcp-option DNS {{ openvpn_udp_subnet.gateway }}"
-proto udp
-port {{ openvpn_port_udp }}
-{% include "etc_openvpn_server_common.j2" %}

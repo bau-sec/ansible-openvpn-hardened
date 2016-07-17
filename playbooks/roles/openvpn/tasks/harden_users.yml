@@ -13,7 +13,7 @@
   register: generated_sudo_username
   when: sudo_user_check.stdout == ""
 
-- set_fact: 
+- set_fact:
     sudo_username: "{{ sudo_user_check.stdout }}"
   when: sudo_user_check.stdout != ""
 
@@ -27,14 +27,14 @@
   when: sudo_user_check.stdout == ""
 
 - name: OpenVPN | Harden | Create {{ sudo_username }} group
-  group: 
+  group:
     name: "{{ sudo_username }}"
 
 - name: OpenVPN | Harden | Create sudo user, '{{ sudo_username }}'
-  user: 
+  user:
     name: "{{ sudo_username }}"
-    password: "{{ sudo_user_password.stdout | password_hash('sha512') }}" 
-    shell: "/bin/bash" 
+    password: "{{ sudo_user_password.stdout | password_hash('sha512') }}"
+    shell: "/bin/bash"
     groups: "{{ sudo_username }},{{ sudo_group }}"
     comment: "{{ sudo_user_comment }}"
   when: sudo_user_check.stdout == ""
