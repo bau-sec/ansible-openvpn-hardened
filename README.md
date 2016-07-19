@@ -25,8 +25,8 @@ Some of the steps taken to harden the server:
 - Firewall configured to only allow SSH access on the VPN LAN
   - The point of this script is to create a VPN tunnel; why not use that VPN to protect the SSH daemon as well? This not only makes the server more secure, it also eliminates the hundreds of daily log entries created by automated scripts trolling the internet for unsecured SSH ports. This makes the system logs easier to sift through.
 - Numerous modifications to `/etc/ssh/sshd_config` for hardening. See [`harden_sshd.yml`](playbooks/roles/openvpn/tasks/harden_sshd.yml)
-- [*auditd*](http://linux.die.net/man/8/auditd) is installed and configured to monitor administrative actions and/or suspicious activity. See [`harden_auditd.yml`](playbooks\roles\openvpn\tasks\harden_auditd.yml)
-- [*AIDE*](http://aide.sourceforge.net/) is a file and directory integrity checker. It's installed, configured and an initial baseline is taken using `aide --init` just before the playbook finishes. See [`harden_aide.yml`](playbooks\roles\openvpn\tasks\harden_aide.yml)
+- [*auditd*](http://linux.die.net/man/8/auditd) is installed and configured to monitor administrative actions and/or suspicious activity. See [`harden_auditd.yml`](playbooks/roles/openvpn/tasks/harden_auditd.yml)
+- [*AIDE*](http://aide.sourceforge.net/) is a file and directory integrity checker. It's installed, configured and an initial baseline is taken using `aide --init` just before the playbook finishes. See [`harden_aide.yml`](playbooks/roles/openvpn/tasks/harden_aide.yml)
 
 ### *systemd* sandboxing
 There are lots of *systemd* detractors out there, but it's the default init system for Debian, Ubuntu and Red Hat. It does provide some useful features for sandboxing services. See [`etc_systemd_system_openvpn@.service.d_override.conf.j2`](playbooks/roles/openvpn/templates/etc_systemd_system_openvpn@.service.d_override.conf.j2) for how some of these features are enabled.
@@ -37,7 +37,7 @@ There are lots of *systemd* detractors out there, but it's the default init syst
     > Note that restricting access with these options does not extend to submounts of a directory that are created later on.
 
 ### OpenVPN server configuration
-For the full server configuration, see [`etc_openvpn_server_common.j2`](playbooks/roles/openvpn/templates/etc_openvpn_server_common.j2), [`etc_openvpn_server.conf.j2`](playbooks/roles/openvpn/templates/etc_openvpn_server.conf.j2) and [`etc_openvpn_server_udp.conf.j2`](playbooks/roles/openvpn/templates/etc_openvpn_server_udp.conf.j2)
+For the full server configuration, see [`etc_openvpn_server.conf.j2`](playbooks/roles/openvpn/templates/etc_openvpn_server.conf.j2)
 - The OpenVPN server uses `--tls-auth`
   - From the [OpenVPN hardening guide](https://community.openvpn.net/openvpn/wiki/Hardening):
 
@@ -47,9 +47,10 @@ For the full server configuration, see [`etc_openvpn_server_common.j2`](playbook
   - See https://community.openvpn.net/openvpn/ticket/605
 - `cipher` set to `AES-256-CBC` by default
 - `2048` bit RSA key size by default.
-  - This can be increased to `4096` by changing `openvpn_key_size` in [`defaults/main.yml`]('playbooks/roles/openvpn/defaults/main.yml') if you don't mind extra processing time. Consensus seems to be that 2048 is sufficient for all but the most sensitive data.
+  - This can be increased to `4096` by changing `openvpn_key_size` in [`defaults/main.yml`](playbooks/roles/openvpn/defaults/main.yml) if you don't mind extra processing time. Consensus seems to be that 2048 is sufficient for all but the most sensitive data.
 
 ### OpenVPN client configuration
+For the full client configuration, see [`client_common.ovpn.j2`](playbooks/roles/add_clients/templates/client_common.ovpn.j2)
 - The OpenVPN client configurations generated use `--verify-x509-name` to prevent MitM attacks by verifing the server name in the supplied certificate matches the clients configuration.
 
 ### PKI

@@ -8,8 +8,10 @@
   gather_facts: no
   pre_tasks:
     # If python doesn't exist on path (type returns non-zero), install python
-    - raw: 'type python >/dev/null 2>&1 || apt-get -y install python-minimal'
-    - setup:
+    - name: OpenVPN | install | Install python2 if necessary
+      raw: 'type python >/dev/null 2>&1 || apt-get -y install python-minimal'
+    - name: OpenVPN | install | Gather facts after python2 is available
+      setup:
 
   roles:
     - openvpn
@@ -17,7 +19,8 @@
     - {role: audit, when: do_audit is defined and do_audit }
 
   post_tasks:
-    - shell: sleep 2 && shutdown -r now "Restart for OpenVPN install"
+    - name: OpenVPN | install | Restart system after setup
+      shell: sleep 2 && shutdown -r now "Restart for OpenVPN install"
       async: 1
       poll: 0
       ignore_errors: true
