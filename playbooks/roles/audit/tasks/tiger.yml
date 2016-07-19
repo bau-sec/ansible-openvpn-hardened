@@ -13,6 +13,7 @@
 - name: Audit | tiger | Get report name
   shell: ls -1 /var/log/tiger/
   register: tiger_report_path
+  changed_when: false
 
 - name: Audit | tiger | Get report
   fetch:

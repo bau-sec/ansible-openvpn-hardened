@@ -50,7 +50,8 @@
   register: aide_cron
   when: ansible_os_family == "Debian"
 
-- fail: msg="No daily cron job for running AIDE"
+- name: OpenVPN | Harden Misc | Check for AIDE cron job
+  fail: msg="No daily cron job for running AIDE"
   when: ansible_os_family == "Debian" and aide_cron.stat.exists == false
 
 # Necessary for Azure, this line seems to be missing in the 16.04 image.

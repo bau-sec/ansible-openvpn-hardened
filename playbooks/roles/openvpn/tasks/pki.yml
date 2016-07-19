@@ -26,17 +26,21 @@
   register: ca_password_result
   when: ca_password is not defined
 
-- name: OpenVPN | Harden | Store CA password
+- name: OpenVPN | PKI | Store CA password
   local_action: template src=group_vars_all.yml.j2 dest={{ playbook_dir }}/group_vars/all.yml
   when: ca_password is not defined
 
-- set_fact:
+- name: OpenVPN | PKI | Set CA password variable
+  set_fact:
     ca_password: "{{ ca_password_result.stdout }}"
   when: ca_password is not defined
 
-- set_fact:
+- name: OpenVPN | PKI | Set common name variable
+  set_fact:
     openvpn_server_common_name: "{{ openvpn_server_common_name_result.stdout }}"
-- set_fact:
+
+- name: OpenVPN | PKI | Set server key and cert path variables
+  set_fact:
     path_server_key: "{{ openvpn_path_keys }}/server@{{ openvpn_server_common_name }}.key"
     path_server_cert: "{{ openvpn_path_certs }}/server@{{ openvpn_server_common_name }}.crt"
 

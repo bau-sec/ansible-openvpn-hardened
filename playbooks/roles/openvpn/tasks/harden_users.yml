@@ -1,5 +1,6 @@
 ---
-- set_fact:
+- name: OpenVPN | Harden | Set sudo user comment variable
+  set_fact:
     sudo_user_comment: "ansible-openvpn-hardened sudo user"
 
 - name: OpenVPN | Harden | Check for existing user
@@ -13,11 +14,13 @@
   register: generated_sudo_username
   when: sudo_user_check.stdout == ""
 
-- set_fact:
+- name: OpenVPN | Harden | Set sudo username variable
+  set_fact:
     sudo_username: "{{ sudo_user_check.stdout }}"
   when: sudo_user_check.stdout != ""
 
-- set_fact:
+- name: OpenVPN | Harden | Set sudo username variable
+  set_fact:
     sudo_username: "{{ generated_sudo_username.stdout }}"
   when: sudo_user_check.stdout == ""
 
