@@ -9,15 +9,22 @@
     src: etc_openvpn_server.conf.j2
     dest: "{{ openvpn_path }}/{{ item.proto }}-{{ item.port }}.conf"
   with_items: "{{ openvpn_instances }}"
+  notify:
+    - start openvpn
 
 # TODO make openvpn_user/group a variable referenced here and systemd (openvpn and tmpfiles conf)
 #Harden - Run as unprivileged user
 #         See: https://community.openvpn.net/openvpn/wiki/UnprivilegedUser
 - name: OpenVPN | Users | Create openvpn group
-  action: group name=openvpn
+  group:
+    name: openvpn
 
 - name: OpenVPN | Users | Create openvpn user
-  action: user name=openvpn group=openvpn shell=/usr/sbin/nologin home=/var/lib/openvpn
+  user:
+    name: openvpn
+    group: openvpn
+    shell: /usr/sbin/nologin
+    home: /var/lib/openvpn
 
 - name: OpenVPN | Directories | Set the proper permissions {{ openvpn_path }}
   file:
@@ -74,12 +81,17 @@
     - "/usr/sbin/openvpn"
 
 - name: OpenVPN | setcap | Set capabilities to allow /usr/sbin/openvpn to bind to reserved (0-1024) ports
-  shell: setcap 'cap_net_admin,cap_net_bind_service+eip' /usr/sbin/openvpn
-  changed_when: false
+  capabilities:
+    path: /usr/sbin/openvpn
+    capability: '{{ item }}'
+  with_items:
+    - "cap_net_admin+eip"
+    - "cap_net_bind_service+eip"
 
 - name: OpenVPN | setcap | Set capabilities to allow "{{ path_bin_ip }}" perform network admin tasks
-  shell: setcap 'cap_net_admin+eip' {{ path_bin_ip }}
-  changed_when: false
+  capabilities:
+    path: "{{ path_bin_ip }}"
+    capability: 'cap_net_admin+eip'
 
 - name: OpenVPN | systemd | Make override directories
   file:
@@ -92,14 +104,20 @@
   template:
     src: etc_systemd_system_openvpn@.service.d_override.conf.j2
     dest: /etc/systemd/system/openvpn@.service.d/override.conf
+  notify:
+    - start openvpn
 
 - name: OpenVPN | systemd | Use systemd-tmpfiles to create /run/openvpn on startup
   template:
     src: etc_tmpfiles.d_openvpn.conf
     dest: /etc/tmpfiles.d/openvpn.conf
+  notify:
+    - systemd tmpfiles
 
 - name: OpenVPN | systemd | Enable services
   service:
     name: "openvpn@{{ item.proto }}-{{ item.port }}.service"
     enabled: true
   with_items: "{{ openvpn_instances }}"
+  notify:
+    - start openvpn

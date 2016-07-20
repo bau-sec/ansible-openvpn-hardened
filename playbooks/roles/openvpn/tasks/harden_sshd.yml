@@ -1,4 +1,16 @@
 ---
+- name: OpenVPN | Harden | Set allowed SSH users
+  set_fact:
+    allowed_ssh_users: "{{ sudo_username }}"
+  when: ansible_virtualization_type != "docker"
+
+- name: OpenVPN | Harden | Set allowed SSH users for test
+  set_fact:
+    allowed_ssh_users: "{{ sudo_username }} docker"
+  when: ansible_virtualization_type == "docker"
+  tags:
+    - ci_test
+
 - name: OpenVPN | Harden | sshd configuration
   lineinfile:
     dest: /etc/ssh/sshd_config
@@ -18,7 +30,7 @@
     - { reg: '^(#)?TCPKeepAlive', line: 'TCPKeepAlive no'}
     - { reg: '^(#)?UsePrivilegeSeparation', line: 'UsePrivilegeSeparation SANDBOX'}
     - { reg: '^(#)?X11Forwarding', line: 'X11Forwarding no'}
-    - { reg: '^(#)?AllowUsers', line: 'AllowUsers {{ sudo_username }}'}
+    - { reg: '^(#)?AllowUsers', line: 'AllowUsers {{ allowed_ssh_users }}'}
     # V-38607 - The SSH daemon must be configured to use only the SSHv2 protocol
     - { reg: '^(#)?PrintLastLog', line: 'PrintLastLog yes'}
     # V-38607 - The SSH daemon must be configured to use only the SSHv2 protocol

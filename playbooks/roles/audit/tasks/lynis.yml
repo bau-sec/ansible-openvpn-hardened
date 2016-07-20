@@ -7,10 +7,21 @@
     version: master
     dest: "/usr/local/lynis"
 
+# chown root:root /usr/local/lynis/include/*
+# chown root:root /usr/local/lynis/plugins/*
+
+- name: Audit | lynis | chown dirs
+  file:
+    path: /usr/local/lynis
+    owner: root
+    group: root
+    recurse: true
+
 - name: Audit | lynis | Run lynis
   shell: ./lynis audit system --cronjob > ~/lynis_report.txt
   args:
     chdir: /usr/local/lynis
+  changed_when: false
 
 - name: Audit | lynis | Make local destination
   local_action: file path="{{ local_creds_folder }}/" state=directory

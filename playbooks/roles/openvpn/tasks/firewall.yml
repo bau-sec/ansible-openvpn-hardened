@@ -1,4 +1,8 @@
 ---
+- name: OpenVPN | Firewall | Reread ansible_default_ipv4
+  setup:
+    filter: ansible_default_ipv4*
+
 - name: OpenVPN | Firewall | Write persistent iptables rules
   template:
     src: etc_iptables_rules.v4.j2

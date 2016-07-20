@@ -1,0 +1,87 @@
+---
+language: python
+
+cache: pip
+
+sudo: required
+
+env:
+  global:
+    - ANSIBLE_HOST_KEY_CHECKING=False
+  matrix:
+    - distribution: centos
+      version: 7
+      init: /usr/lib/systemd/systemd
+      run_opts: "'--detach --privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup'"
+      ssh: sshd
+    - distribution: ubuntu
+      version: 16.04
+      init: /sbin/init
+      #--volume=\"/tmp/$(mktemp -d):/run\"
+      run_opts: "'--detach --privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup'"
+      ssh: ssh
+    - distribution: debian
+      version: 8.5
+      init: /bin/systemd
+      run_opts: "'--detach --privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup'"
+      ssh: ssh
+
+services:
+  - docker
+
+before_install:
+  # Pull container
+  - sudo docker pull ${distribution}:${version}
+  - ssh-keygen -t rsa -f /home/travis/.ssh/id_rsa -q -N ""
+  - cp /home/travis/.ssh/id_rsa.pub test/id_rsa.pub
+  # Customize container
+  - sudo docker build --rm=true --file=test/Dockerfile.${distribution}-${version} --tag=${distribution}-${version}:ansible .
+  # Run container in detached state
+  - sudo docker run ${run_opts} ${distribution}-${version}:ansible "${init}"
+
+install:
+  - sudo -H pip install ansible ansible-lint
+
+script:
+  - container_id=$(mktemp)
+  - container_ip=$(mktemp)
+
+  - sudo docker ps -q > "${container_id}"
+
+  - sudo docker exec $(cat ${container_id}) /bin/systemctl status ${ssh}.service
+
+  # Ansible syntax check.
+  - ansible-lint playbooks/install.yml
+  - ansible-lint playbooks/add_clients.yml
+  - ansible-lint playbooks/revoke_client.yml
+
+  # Get the IP of the container and add it to the inventory
+  - sudo docker inspect --format '{{ .NetworkSettings.IPAddress }}' $(cat ${container_id}) > "${container_ip}"
+  - sed -i -e 's/172\.17\.0\.2/'"$(cat ${container_ip})"'/' test/docker-inventory
+
+  # Verify ssh connection
+  - ssh-keyscan -H $(cat ${container_ip}) >> ~/.ssh/known_hosts
+  # - ssh -vvv docker@$(cat ${container_ip}) /bin/true
+
+  # Test role.
+  - ansible-playbook -i test/docker-inventory playbooks/install.yml
+
+  # Test role idempotence.
+  - >
+    ansible-playbook -i test/docker-inventory playbooks/install.yml
+    | grep -q 'changed=0.*failed=0'
+    && (echo 'Idempotence test: pass' && exit 0)
+    || (echo 'Idempotence test: fail' && exit 1)
+
+  # Test adding a client
+  - ansible-playbook -i test/docker-inventory -e "cmd_hosts=openvpn-internet clients_to_add=cool_client" playbooks/add_clients.yml
+
+  # Test removing a client
+  - ansible-playbook -i test/docker-inventory -e "cmd_hosts=openvpn-internet client=cool_client" playbooks/revoke_client.yml
+
+  # Test audit
+  - ansible-playbook -i test/docker-inventory -e "cmd_hosts=openvpn-internet" playbooks/audit.yml
+
+after_script:
+  # Clean up
+  - 'sudo docker stop "$(cat ${container_id})"'

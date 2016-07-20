@@ -10,6 +10,8 @@
     # If python doesn't exist on path (type returns non-zero), install python
     - name: OpenVPN | install | Install python2 if necessary
       raw: 'type python >/dev/null 2>&1 || apt-get -y install python-minimal'
+      changed_when: false
+
     - name: OpenVPN | install | Gather facts after python2 is available
       setup:
 
@@ -25,3 +27,4 @@
       poll: 0
       ignore_errors: true
       changed_when: false
+      when: ansible_virtualization_type != "docker"

@@ -27,7 +27,7 @@
 - name: OpenVPN | Harden | Generate sudo user password
   shell: echo "$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c15)"
   register: sudo_user_password
-  when: sudo_user_check.stdout == ""
+  changed_when: false
 
 - name: OpenVPN | Harden | Create {{ sudo_username }} group
   group:
@@ -37,38 +37,49 @@
   user:
     name: "{{ sudo_username }}"
     password: "{{ sudo_user_password.stdout | password_hash('sha512') }}"
+    update_password: on_create
     shell: "/bin/bash"
     groups: "{{ sudo_username }},{{ sudo_group }}"
     comment: "{{ sudo_user_comment }}"
-  when: sudo_user_check.stdout == ""
+  register: user_result
 
 # As recommended by https://help.ubuntu.com/lts/serverguide/user-management.html
 - name: OpenVPN | Harden | Remove world readable home directory permissions
-  file: path=/home/{{ sudo_username }} state=directory mode=0750
+  file:
+    path: "/home/{{ sudo_username }}"
+    state: directory
+    mode: 0750
 
 - name: OpenVPN | Harden | Add or update authorized key
   action: authorized_key user={{ sudo_username }} key="{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
 
 - name: OpenVPN | Harden | Store sudo user creds
   local_action: template src=group_vars_openvpn-vpn.yml.j2 dest={{ playbook_dir }}/group_vars/openvpn-vpn.yml
-  when: sudo_user_check.stdout == ""
+  when: user_result.changed
 
-- name: OpenVPN | Harden | Disable root account
-  action: shell passwd -l root
-  changed_when: false
+# Password setting used here is similar to running 'passwd -l root' which just
+# prefixes the hashed password in /etc/shadow with an '!', making it an invalid hash
+# The supplied password is expected to already be hashed and the supplied value is
+# put directly into /etc/shadow so the result is an /etc/shadow that looks like:
+# ...
+# root:!:...
+# ...
+# This both clears and disables any existing password for the root account.
+- name: OpenVPN | Harden | Disable root login
+  user:
+    name: root
+    shell: /usr/sbin/nologin
+    password: '!'
 
-- name: OpenVPN | Harden | Set root shell to no login
-  action: user name=root shell=/usr/sbin/nologin
-
-- name: OpenVPN | Harden | Check for .bash_history
-  stat: path=/root/.bash_history
-  register: root_history
-
-# As recommended by LinEnum. File may not exist so ignore errors
+# As recommended by LinEnum.
 - name: OpenVPN | Harden | Only root can read root's .bash_history
-  file: path=/root/.bash_history mode=0600
-  when: root_history.stat.exists
+  file:
+    path: /root/.bash_history
+    mode: 0600
+    state: touch
+  changed_when: false
 
 - name: OpenVPN | Harden | Disable root tty access
-  action: shell echo > /etc/securetty
-  changed_when: false
+  copy:
+    content: ""
+    dest: /etc/securetty

@@ -1,19 +1,32 @@
 ---
 - name: OpenVPN | AIDE | Check for DB
-  stat: path={{ aide_db }}
-  register: aide_db
+  stat:
+    path: "{{ path_aide_db }}"
+  register: aide_db_check
 
 - name: OpenVPN | AIDE | Initialize AIDE DB
   shell: aideinit
   changed_when: false
-  when: ansible_os_family == "Debian" and aide_db.stat.exists == false
+  when: ansible_os_family == "Debian" and aide_db_check.stat.exists == false
+  tags:
+    - skip_ansible_lint
 
 - name: OpenVPN | AIDE | Initialize AIDE DB
   shell: aide --init
   changed_when: false
-  when: ansible_os_family == "RedHat" and aide_db.stat.exists == false
-  
-- name: OpenVPN | AIDE | Initialize AIDE DB
-  shell: mv /var/lib/aide/aide.db.new.gz /var/lib/aide.db.gz
-  changed_when: false
-  when: ansible_os_family == "RedHat" and aide_db.stat.exists == false
+  when: ansible_os_family == "RedHat" and aide_db_check.stat.exists == false
+  tags:
+    - skip_ansible_lint
+
+- name: OpenVPN | AIDE | Copy initialized DB
+  copy:
+    remote_src: true
+    src: /var/lib/aide/aide.db.new.gz
+    dest: "{{ path_aide_db }}"
+  when: ansible_os_family == "RedHat" and aide_db_check.stat.exists == false
+
+- name: OpenVPN | AIDE | Delete old DB
+  file:
+    path: /var/lib/aide/aide.db.new.gz
+    state: absent
+  when: ansible_os_family == "RedHat" and aide_db_check.stat.exists == false

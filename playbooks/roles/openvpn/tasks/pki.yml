@@ -97,9 +97,13 @@
   args:
     chdir: "{{ openvpn_path_easyrsa }}/pki"
     creates: "{{ openvpn_hmac_firewall }}"
+  tags:
+    - skip_ansible_lint
 
 - name: OpenVPN | PKI | Build dh.pem
   shell: ./easyrsa gen-dh
   args:
     chdir: "{{ openvpn_path_easyrsa }}"
     creates: "{{ dhparams_location }}"
+  tags:
+    - skip_ansible_lint

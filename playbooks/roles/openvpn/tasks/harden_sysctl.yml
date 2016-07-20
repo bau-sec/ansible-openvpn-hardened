@@ -31,4 +31,3 @@
     - { name: 'net.ipv6.conf.lo.disable_ipv6', value: 1 }
     - { name: 'net.ipv6.conf.default.accept_ra', value: 0 }
     - { name: 'fs.suid_dumpable', value: 0 }
-    
