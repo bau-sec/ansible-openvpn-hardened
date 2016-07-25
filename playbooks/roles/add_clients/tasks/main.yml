@@ -136,6 +136,8 @@
   with_together:
     - "{{ clients_to_add }}"
     - "{{ client_pk_passwords.results }}"
+  tags:
+    - skip_ansible_lint
 
 - name: OpenVPN | Add Clients | Get .ovpn files (*-pki-embedded.ovpn)
   fetch:

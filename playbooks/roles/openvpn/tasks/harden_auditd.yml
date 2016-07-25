@@ -1,8 +1,7 @@
 ---
-- name: OpenVPN | Harden auditd | Start Service
+- name: OpenVPN | Harden auditd | Enable auditd service
   service:
     name: auditd
-    state: started
     enabled: true
 
 - name: OpenVPN | Harden auditd | Configure
@@ -18,6 +17,8 @@
     - { regexp: '^(#)?space_left[\s]*=', line: 'space_left = 75'}
     - { regexp: '^(#)?space_left_action[\s]*=', line: 'space_left_action = halt'}
     - { regexp: '^(#)?admin_space_left_action[\s]*=', line: 'admin_space_left_action = halt'}
+  notify:
+    - start auditd
 
 - name: OpenVPN | Harden auditd | Forward auditd records to syslog
   lineinfile:
@@ -151,11 +152,15 @@
         line: '-w /usr/sbin/modprobe -p x -k modules'}
     - { regexp: '^\-a\s+always,exit\s+(\-F\s+arch=(b64|b32)\s+)?\-S\s+init_module\s+\-S\s+delete_module\s+\-k\s+[-\w]+\s*$',
         line: '-a always,exit -F arch=b64 -S init_module -S delete_module -k modules'}
+  notify:
+    - start auditd
 
 - name: OpenVPN | Harden auditd | Find all setuid/setgid applications
   shell: find / -xdev -type f -perm -4000 -o -type f -perm -2000 2>/dev/null
   changed_when: false
   register: found_setuid_bins
+  notify:
+    - start auditd
 
 - name: OpenVPN | Harden auditd | Monitor all setuid/setgid applications
   lineinfile:
@@ -164,3 +169,5 @@
     regexp: '^\-a\s+always,exit\s+\-F\s+path={{ item }}\s+\-F\s+perm=x\s+\-F\s+auid>=1000\s+\-F\s+auid!=4294967295\s+\-k\s+privileged\s*$'
     state: present
   with_items: "{{ found_setuid_bins.stdout_lines }}"
+  notify:
+    - start auditd

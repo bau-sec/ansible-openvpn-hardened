@@ -1,6 +1,7 @@
 - name: Audit Server
 # ========================================================
-  hosts: openvpn-vpn
-  
+  # Allows caller to override hosts using '-e cmd_hosts='
+  hosts: "{{ cmd_hosts | default('openvpn-vpn') }}"
+
   roles:
     - audit

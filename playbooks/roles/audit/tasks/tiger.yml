@@ -6,19 +6,24 @@
 # TODO Maybe add '-H' to get an HTML report instead
 - name: Audit | tiger | Run
   shell: tiger -e
+  changed_when: false
+  tags:
+    - skip_ansible_lint
 
 - name: Audit | tiger | Make local destination
   local_action: file path="{{ local_creds_folder }}/" state=directory
 
 - name: Audit | tiger | Get report name
-  shell: ls -1 /var/log/tiger/
+  find:
+    path: /var/log/tiger/
+    get_checksum: true
   register: tiger_report_path
   changed_when: false
 
 - name: Audit | tiger | Get report
   fetch:
-    src: "/var/log/tiger/{{ item }}"
-    dest: "{{ local_creds_folder }}/tiger_report.txt"
+    src: "{{ item.path }}"
+    dest: "{{ local_creds_folder }}/tiger_report-{{ item.checksum }}.txt"
     flat: yes
   with_items:
-    - "{{ tiger_report_path.stdout_lines }}"
+    - "{{ tiger_report_path.files }}"

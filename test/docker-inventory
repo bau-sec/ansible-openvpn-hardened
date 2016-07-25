@@ -1,0 +1,5 @@
+[localhost]
+127.0.0.1 ansible_python_interpreter=python
+
+[openvpn-internet]
+172.17.0.2 ansible_user=docker ansible_become=yes ansible_become_pass=password

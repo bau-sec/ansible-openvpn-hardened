@@ -14,14 +14,20 @@
   package:
     name: "{{ item }}"
   with_items: "{{ os_family_specific_pre }}"
+  register: install_specific_result
+  until: install_specific_result | success
+  retries: 5
+  delay: 5
 
 - name: OpenVPN | package | Add the official OpenVPN APT key
   apt_key:
     id: E158C569
-    data: "{{ item }}"
-  with_file: openvpn_signing.key
-  no_log: true
+    url: "https://swupdate.openvpn.net/repos/repo-public.gpg"
+    state: present
   when: ansible_os_family == "Debian"
+
+- name: OpenVPN | package | Reread ansible_lsb facts
+  setup: filter=ansible_lsb*
 
 - name: OpenVPN | package | Add the official OpenVPN repository
   apt_repository:
@@ -34,6 +40,12 @@
   package:
     name: "{{ item }}"
   with_items: "{{ required_packages }}"
+  register: install_required_result
+  until: install_required_result | success
+  retries: 5
+  delay: 5
+  tags:
+    - skip_ansible_lint
 
 - name: OpenVPN | package | apt - upgrade any out of date packages
   apt:
@@ -46,6 +58,8 @@
     state: latest
     update_cache: yes
   when: ansible_os_family == "RedHat"
+  tags:
+    - skip_ansible_lint
 
 - name: OpenVPN | package | Copy the unattended-upgrades templates to enable automatic security updates
   copy:

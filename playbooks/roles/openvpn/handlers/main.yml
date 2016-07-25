@@ -1,0 +1,35 @@
+---
+- name: clear history
+  shell: cat /dev/null > ~/.bash_history && history -c
+  args:
+    executable: /bin/bash
+  changed_when: false
+
+- name: systemd tmpfiles
+  shell: systemd-tmpfiles --remove --create
+  changed_when: false
+  tags:
+    - skip_ansible_lint
+
+# TODO try to get Ubuntu docker container working
+- name: start openvpn
+  service:
+    name: "openvpn@{{ item.proto }}-{{ item.port }}.service"
+    state: started
+  with_items: "{{ openvpn_instances }}"
+  when: (ansible_virtualization_type != "docker") or
+        (ansible_virtualization_type == "docker" and ansible_distribution not in ['Ubuntu', 'Debian'])
+
+# TODO try to get Ubuntu docker container working
+- name: start dnsmasq
+  service:
+    name: dnsmasq
+    state: started
+  when: (ansible_virtualization_type != "docker") or
+        (ansible_virtualization_type == "docker" and ansible_distribution not in ['Ubuntu', 'Debian'])
+
+- name: start auditd
+  service:
+    name: auditd
+    state: started
+  when: ansible_virtualization_type != "docker"

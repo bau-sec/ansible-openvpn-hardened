@@ -11,6 +11,7 @@ path_pam_system_auth: /etc/pam.d/common-auth
 path_pam_password_auth: /etc/pam.d/common-password
 path_mac_config: /etc/apparmor
 path_auditd_rules: /etc/audit/audit.rules
+path_aide_db: /var/lib/aide/aide.db
 
 sudo_group: sudo
 path_grub_cfg: /boot/grub/grub.cfg
@@ -26,7 +27,6 @@ deny_failed_login_auth_files:
 deny_failed_login_account_files:
   - "/etc/pam.d/common-account"
 
-aide_db: /var/lib/aide/aide.db
 
 os_family_specific_pre:
   # Needed for ansible module apt: upgrade
@@ -44,7 +44,6 @@ os_family_specific_pre:
   - debsums
   - debsecan
   # Package management
-  - apt-show-versions
   - apt-listchanges
   # Password policy
   - libpam-pwquality

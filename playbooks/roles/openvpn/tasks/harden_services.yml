@@ -1,23 +1,17 @@
 ---
 - name: OpenVPN | Harden Services | cron.allow
   copy:
-    src: "etc_cron.allow"
+    content: "root"
     dest: "/etc/cron.allow"
     owner: root
     group: root
     mode: 0644
 
 # Note aide package on debian requires parts of exim, so can't uninstall it. just disable.
-- name: OpenVPN | Harden Services | Disable exim
+- name: OpenVPN | Harden Services | Disable mail services
   service:
-    name: exim4
-    state: stopped
+    name: "{{ item }}"
     enabled: false
-  when: ansible_distribution in ['Debian']
-
-- name: OpenVPN | Harden Services | Disable postfix
-  service:
-    name: postfix
-    state: stopped
-    enabled: false
-  when: ansible_distribution in ['Ubuntu', 'CentOS']
+  with_items:
+    - exim4
+    - postfix

@@ -23,8 +23,22 @@
     {{ item.extra }}
     {{ item.policy }}
   ignore_errors: true
-  no_log: true
+  #no_log: true
   with_items: "{{ oscap_reports }}"
+  register: openscap_results
+  changed_when: false
+  failed_when: false
+  tags:
+    - skip_ansible_lint
+
+#- debug: var=openscap_results
+
+- name: Audit | OpenSCAP | Check Run Results
+  fail:
+    msg: "Error occurred. See stdout:\n{{ item.stdout }}"
+  no_log: True
+  when: item.stdout.find('OpenSCAP Error') == 1
+  with_items: "{{ openscap_results.results }}"
 
 - name: Audit | OpenSCAP | Make local destination
   local_action: file path="{{ local_creds_folder }}/" state=directory

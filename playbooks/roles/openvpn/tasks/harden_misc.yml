@@ -6,12 +6,19 @@
     regexp: ^[\s]*\*[\s]+hard[\s]+core[\s]+([\d]+)
     state: present
 
+- name: OpenVPN | Harden Misc | Filter out links from path directories
+  stat:
+    path: "{{ item }}"
+  register: path_dirs
+  with_items: "{{ ansible_env['PATH'].split(':') }}"
+
 - name: OpenVPN | Harden Misc | No group or other writable permissions on path
   file:
-    path: "{{ item }}"
+    path: "{{ item.stat.path }}"
     mode: "go-w"
     state: directory
-  with_items: "{{ ansible_env['PATH'].split(':') }}"
+  when: "item.stat.islnk == false"
+  with_items: "{{ path_dirs.results }}"
 
 - name: OpenVPN | Harden Misc | Add legal banner
   lineinfile:
@@ -64,6 +71,7 @@
     line: \1 \2 {{ ansible_hostname }}
     state: present
     backrefs: true
+  when: ansible_virtualization_type != "docker"
 
 # Since using backrefs, if no match -> no change. This prevents adding audit=1 everytime
 - name: OpenVPN | Harden Misc | grub - Turn on auditing before auditd starts
@@ -74,13 +82,17 @@
     state: present
     backrefs: true
   register: updated_grub_cfg
+  when: ansible_virtualization_type != "docker"
 
 - name: OpenVPN | Harden Misc | grub - Regenerate grub.cfg
   shell: "{{ grub_mkconfig }} -o {{ path_grub_cfg }}"
   when: updated_grub_cfg.changed
+  tags:
+    - skip_ansible_lint
 
 - name: OpenVPN | Harden Misc | Grub permissions
   file:
     path: "{{ path_grub_cfg }}"
     mode: "0600"
     state: file
+  when: ansible_virtualization_type != "docker"
