@@ -1,4 +1,4 @@
-# Overview
+# Overview [![Build Status](https://travis-ci.org/bau-sec/ansible-openvpn-hardened.svg?branch=master)](https://travis-ci.org/bau-sec/ansible-openvpn-hardened)
 *ansible-openvpn-hardened* is an [*Ansible*](http://www.ansible.com/home) playbook written to create and manage a hardened OpenVPN server instance in the cloud or locally. The created instance is configured for use as a tunnel for internet traffic allowing more secure internet access when using public WiFi or other untrusted networks. With this setup you don't have to trust or pay a shady VPN service; you control your data and the security of the VPN.
 
 Other Ansible playbooks and roles exist to automate the installation of OpenVPN, but none configure the OpenVPN server to run entirely as an unprivileged user [as described in the OpenVPN docs](https://community.openvpn.net/openvpn/wiki/UnprivilegedUser) or use *systemd* to sandbox the OpenVPN server process.
