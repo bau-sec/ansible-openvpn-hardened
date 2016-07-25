@@ -7,9 +7,6 @@
     version: master
     dest: "/usr/local/lynis"
 
-# chown root:root /usr/local/lynis/include/*
-# chown root:root /usr/local/lynis/plugins/*
-
 - name: Audit | lynis | chown dirs
   file:
     path: /usr/local/lynis

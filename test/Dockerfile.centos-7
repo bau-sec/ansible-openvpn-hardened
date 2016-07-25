@@ -25,7 +25,6 @@ RUN chmod 701 /home/docker
 RUN chmod 700 /home/docker/.ssh
 RUN chmod 600 /home/docker/.ssh/authorized_keys
 
-#RUN sed -e 's/Defaults   !visiblepw/Defaults    visiblepw/' -e 's/Defaults    requiretty/Defaults   !requiretty/' /etc/sudoers
 RUN bash -c 'echo "Defaults:docker !requiretty" | (EDITOR="tee -a" visudo)'
 RUN cat /etc/sudoers
 
@@ -35,5 +34,6 @@ VOLUME [ "/sys/fs/cgroup" ]
 VOLUME ["/run"]
 
 EXPOSE 22
+EXPOSE 1194
 
 CMD ["/usr/sbin/init"]

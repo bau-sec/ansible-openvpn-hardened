@@ -5,6 +5,7 @@ RUN apt-get update; apt-get -y upgrade
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get -q -y install systemd dbus openssh-server sudo openssh-client
 
+# Uncomment to speed up local tests by pre-installing most required packages
 #RUN DEBIAN_FRONTEND=noninteractive apt-get -q -y install aptitude iptables-persistent apt-transport-https ca-certificates python-software-properties unattended-upgrades debsums debsecan apt-listchanges libpam-pwquality aide-common
 #RUN DEBIAN_FRONTEND=noninteractive apt-get -q -y install sudo python-pip python-virtualenv git gnupg iptables aide openssl dnsmasq auditd
 
@@ -28,6 +29,7 @@ VOLUME [ "/sys/fs/cgroup" ]
 VOLUME ["/run"]
 
 EXPOSE 22
+EXPOSE 1194
 
 RUN locale-gen en_US.UTF-8
 ENV LANG en_US.UTF-8
