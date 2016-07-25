@@ -12,6 +12,10 @@ openvpn_clients:
 openvpn_key_size: "2048"
 openvpn_cipher: "AES-256-CBC"
 openvpn_auth_digest: "SHA256"
+# For all available ciphers use: openvpn --show-tls
+# For all available PFS ciphers (without eliptic curve cryptography) use: openvpn --show-tls | grep -e "-DHE-"
+# Configuration here just uses PFS ciphers leveraging AES256 and at least SHA256
+openvpn_tls_cipher: "TLS-DHE-DSS-WITH-AES-256-GCM-SHA384:TLS-DHE-RSA-WITH-AES-256-GCM-SHA384:TLS-DHE-RSA-WITH-AES-256-CBC-SHA256:TLS-DHE-DSS-WITH-AES-256-CBC-SHA256"
 
 openvpn_instances:
   - {
