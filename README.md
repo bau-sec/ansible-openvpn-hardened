@@ -55,7 +55,8 @@ For the full server configuration, see [`etc_openvpn_server.conf.j2`](playbooks/
   - See https://community.openvpn.net/openvpn/ticket/605
 - `tls-cipher` limits allowable TLS ciphers to a subset that supports [**perfect forward secrecy**](https://en.wikipedia.org/wiki/Forward_secrecy)
   - From wikipedia:
-    > Forward secrecy protects past sessions against future compromises of secret keys or passwords. If forward secrecy is used, encrypted communications and sessions recorded in the past cannot be retrieved and decrypted should long-term secret keys or passwords be compromised in the future, even if the adversary actively interfered.
+    
+	> Forward secrecy protects past sessions against future compromises of secret keys or passwords. If forward secrecy is used, encrypted communications and sessions recorded in the past cannot be retrieved and decrypted should long-term secret keys or passwords be compromised in the future, even if the adversary actively interfered.
 
 - `cipher` set to `AES-256-CBC` by default
 - `2048` bit RSA key size by default.
