@@ -7,11 +7,11 @@ Other Ansible playbooks and roles exist to automate the installation of OpenVPN 
 - use only TLS ciphers that implement **perfect forward secrecy**
 - leverage *easyrsa* for PKI with a CRL and ansible playbooks for easy key management
 - produce thorough security audits using independent tools
-- And more; see the [Hardening](#Hardening) section
+- And more; see the [Hardening](#hardening) section
 
 *ansible-openvpn-hardened* includes a playbook to run audits against the created server that independently verify the steps taken to harden the server. The supported auditing tools include [*OpenSCAP*](https://www.open-scap.org/) (with assistance from [*ubuntu-scap*](https://github.com/GovReady/ubuntu-scap) on Debian/Ubuntu), [*lynis*](https://cisofy.com/lynis/) and [*tiger*](http://www.nongnu.org/tiger/). Example output from these tools can be reviewed on the project wiki.
 
-To learn more about the server hardening read on; to get started immediately, jump to [Quick Start](#Quick_start).
+To learn more about the server hardening read on; to get started immediately, jump to [Quick Start](#quick-start).
 
 ## Supported Targets
 
