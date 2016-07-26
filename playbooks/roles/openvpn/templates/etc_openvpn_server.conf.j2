@@ -19,6 +19,7 @@ remote-cert-tls client
 keepalive 10 120
 tls-auth {{ openvpn_hmac_firewall }} 0
 cipher {{ openvpn_cipher }}
+tls-cipher {{ openvpn_tls_cipher }}
 auth {{ openvpn_auth_digest }}
 tls-version-min 1.2
 comp-lzo

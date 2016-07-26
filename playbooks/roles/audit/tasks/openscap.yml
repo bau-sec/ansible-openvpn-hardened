@@ -23,15 +23,12 @@
     {{ item.extra }}
     {{ item.policy }}
   ignore_errors: true
-  #no_log: true
   with_items: "{{ oscap_reports }}"
   register: openscap_results
   changed_when: false
   failed_when: false
   tags:
     - skip_ansible_lint
-
-#- debug: var=openscap_results
 
 - name: Audit | OpenSCAP | Check Run Results
   fail:

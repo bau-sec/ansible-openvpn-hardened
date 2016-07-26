@@ -36,6 +36,23 @@
     update_cache: yes
   when: ansible_os_family == "Debian"
 
+- name: OpenVPN | package | Add debian backports
+  apt_repository:
+    repo: 'deb http://ftp.debian.org/debian {{ ansible_lsb.codename }}-backports main'
+    state: present
+    update_cache: yes
+  when: ansible_distribution in ['Debian']
+
+- name: OpenVPN | package | Upgrade systemd on debian
+  apt:
+    name: systemd
+    state: latest
+    default_release: "{{ ansible_lsb.codename }}-backports"
+  when: ansible_distribution in ['Debian']
+  tags:
+    # Need latest, systemd v215 is really old and a pain to support alongside newer versions
+    - skip_ansible_lint
+
 - name: OpenVPN | package | Install required packages
   package:
     name: "{{ item }}"

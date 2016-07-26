@@ -18,7 +18,7 @@
     state: started
   with_items: "{{ openvpn_instances }}"
   when: (ansible_virtualization_type != "docker") or
-        (ansible_virtualization_type == "docker" and ansible_distribution not in ['Ubuntu', 'Debian'])
+        (ansible_virtualization_type == "docker" and ansible_distribution not in ['Ubuntu'])
 
 # TODO try to get Ubuntu docker container working
 - name: start dnsmasq
@@ -26,7 +26,7 @@
     name: dnsmasq
     state: started
   when: (ansible_virtualization_type != "docker") or
-        (ansible_virtualization_type == "docker" and ansible_distribution not in ['Ubuntu', 'Debian'])
+        (ansible_virtualization_type == "docker" and ansible_distribution not in ['Ubuntu'])
 
 - name: start auditd
   service:

@@ -1,13 +1,21 @@
 # Overview [![Build Status](https://travis-ci.org/bau-sec/ansible-openvpn-hardened.svg?branch=master)](https://travis-ci.org/bau-sec/ansible-openvpn-hardened)
 *ansible-openvpn-hardened* is an [*Ansible*](http://www.ansible.com/home) playbook written to create and manage a hardened OpenVPN server instance in the cloud or locally. The created instance is configured for use as a tunnel for internet traffic allowing more secure internet access when using public WiFi or other untrusted networks. With this setup you don't have to trust or pay a shady VPN service; you control your data and the security of the VPN.
 
-Other Ansible playbooks and roles exist to automate the installation of OpenVPN, but none configure the OpenVPN server to run entirely as an unprivileged user [as described in the OpenVPN docs](https://community.openvpn.net/openvpn/wiki/UnprivilegedUser) or use *systemd* to sandbox the OpenVPN server process.
+Other Ansible playbooks and roles exist to automate the installation of OpenVPN but few, if any, thoroughly harden the OpenVPN server. *ansible-openvpn-hardened* configures the OpenVPN server to:
+- run entirely as an unprivileged user [as described in the OpenVPN docs](https://community.openvpn.net/openvpn/wiki/UnprivilegedUser)
+- use *systemd* to further sandbox the OpenVPN server process.
+- use only TLS ciphers that implement **perfect forward secrecy**
+- leverage *easyrsa* for PKI with a CRL and ansible playbooks for easy key management
+- produce thorough security audits using independent tools
+- And more; see the [Hardening](#hardening) section
 
-*ansible-openvpn-hardened* also includes a playbook to run audits against the created server that independently verify the steps taken to harden the server. The supported auditing tools include [*OpenSCAP*](https://www.open-scap.org/) (with assistance from [*ubuntu-scap*](https://github.com/GovReady/ubuntu-scap) on Debian/Ubuntu), [*lynis*](https://cisofy.com/lynis/) and [*tiger*](http://www.nongnu.org/tiger/). Example output from these tools can be reviewed on the project wiki.
+*ansible-openvpn-hardened* includes a playbook to run audits against the created server that independently verify the steps taken to harden the server. The supported auditing tools include [*OpenSCAP*](https://www.open-scap.org/) (with assistance from [*ubuntu-scap*](https://github.com/GovReady/ubuntu-scap) on Debian/Ubuntu), [*lynis*](https://cisofy.com/lynis/) and [*tiger*](http://www.nongnu.org/tiger/). Example output from these tools can be reviewed on the project wiki.
+
+To learn more about the server hardening read on; to get started immediately, jump to [Quick Start](#quick-start).
 
 ## Supported Targets
 
-The intended target is a fresh instantiation of an image running on a cloud provider like [Digital Ocean](https://www.digitalocean.com/?refcode=5ab3eb461bcb) (warning: referal link) or Microsoft's [Azure](https://azure.microsoft.com/). Physical boxes or local VMs should work as well assuming they are accessible over SSH, but haven't been tested.
+The intended target is a fresh instantiation of an image running on a cloud provider like [Digital Ocean](https://www.digitalocean.com/?refcode=5ab3eb461bcb) (fair warning: referral link) or Microsoft's [Azure](https://azure.microsoft.com/). Physical boxes or local VMs should work as well assuming they are accessible over SSH, but haven't been tested.
 
 The following Linux distros are supported:
 
@@ -29,7 +37,7 @@ Some of the steps taken to harden the server:
 - [*AIDE*](http://aide.sourceforge.net/) is a file and directory integrity checker. It's installed, configured and an initial baseline is taken using `aide --init` just before the playbook finishes. See [`harden_aide.yml`](playbooks/roles/openvpn/tasks/harden_aide.yml)
 
 ### *systemd* sandboxing
-There are lots of *systemd* detractors out there, but it's the default init system for Debian, Ubuntu and Red Hat. It does provide some useful features for sandboxing services. See [`etc_systemd_system_openvpn@.service.d_override.conf.j2`](playbooks/roles/openvpn/templates/etc_systemd_system_openvpn@.service.d_override.conf.j2) for how some of these features are enabled.
+While there are *systemd* detractors out there, it is the default init system for Debian, Ubuntu and Red Hat. And it does provide some useful features for sandboxing services. See [`etc_systemd_system_openvpn@.service.d_override.conf.j2`](playbooks/roles/openvpn/templates/etc_systemd_system_openvpn@.service.d_override.conf.j2) for how some of these features are enabled.
 - The *systemd* unit option `CapabilityBoundingSet` is used to bound the Linux capabilities available to the OpenVPN server process, allowing only `CAP_NET_ADMIN` and `CAP_NET_BIND_SERVICE`
 - The *systemd* unit options `ReadOnlyDirectories`, `InaccessibleDirectories`, `ProtectSystem` and `ProtectHome` are used to restrict the OpenVPN server process' access to the filesystem.
   - These aren't perfect as noted [in the *systemd* docs](https://www.freedesktop.org/software/systemd/man/systemd.exec.html), but better to have them than not:
@@ -38,20 +46,25 @@ There are lots of *systemd* detractors out there, but it's the default init syst
 
 ### OpenVPN server configuration
 For the full server configuration, see [`etc_openvpn_server.conf.j2`](playbooks/roles/openvpn/templates/etc_openvpn_server.conf.j2)
-- The OpenVPN server uses `--tls-auth`
+- `tls-auth` aids in mitigating risk of denial-of-service attacks. Additionally, when combined with usage of UDP at the transport layer (the default configuration used by *ansible-openvpn-hardened*), it complicates attempts to port scan the OpenVPN server because any unsigned packets can be immediately dropped without sending anything back to the scanner.
   - From the [OpenVPN hardening guide](https://community.openvpn.net/openvpn/wiki/Hardening):
 
     > The tls-auth option uses a static pre-shared key (PSK) that must be generated in advance and shared among all peers. This features adds "extra protection" to the TLS channel by requiring that incoming packets have a valid signature generated using the PSK key... The primary benefit is that an unauthenticated client cannot cause the same CPU/crypto load against a server as the junk traffic can be dropped much sooner. This can aid in mitigating denial-of-service attempts.
 
 - `push block-outside-dns` used by OpenVPN server to fix a potential dns leak on Windows 10
   - See https://community.openvpn.net/openvpn/ticket/605
+- `tls-cipher` limits allowable TLS ciphers to a subset that supports [**perfect forward secrecy**](https://en.wikipedia.org/wiki/Forward_secrecy)
+  - From wikipedia:
+    > Forward secrecy protects past sessions against future compromises of secret keys or passwords. If forward secrecy is used, encrypted communications and sessions recorded in the past cannot be retrieved and decrypted should long-term secret keys or passwords be compromised in the future, even if the adversary actively interfered.
+
 - `cipher` set to `AES-256-CBC` by default
 - `2048` bit RSA key size by default.
   - This can be increased to `4096` by changing `openvpn_key_size` in [`defaults/main.yml`](playbooks/roles/openvpn/defaults/main.yml) if you don't mind extra processing time. Consensus seems to be that 2048 is sufficient for all but the most sensitive data.
 
 ### OpenVPN client configuration
 For the full client configuration, see [`client_common.ovpn.j2`](playbooks/roles/add_clients/templates/client_common.ovpn.j2)
-- The OpenVPN client configurations generated use `--verify-x509-name` to prevent MitM attacks by verifing the server name in the supplied certificate matches the clients configuration.
+- `verify-x509-name` prevents MitM attacks by verifying the server name in the supplied certificate matches the clients configuration.
+- `persist-tun` prevents the traffic from leaking out over the default interface during interruptions and reconnection attempts by keeping the tun device up until connectivity is restored.
 
 ### PKI
 - [easy-rsa](https://github.com/OpenVPN/easy-rsa) is used to manage the public key infrastructure.
@@ -60,14 +73,14 @@ For the full client configuration, see [`client_common.ovpn.j2`](playbooks/roles
 
 The bullets above are just an overview. See the task definitions with filenames in the form `harden_<category>.yml` to review the complete set of steps.
 
-The [`audit.yml`](playbooks/audit.yml) playbook can be run on the target server to independently verify the steps taken and their efficacy so you don't have to trust a random guy on the internet.
+The [`audit.yml`](playbooks/audit.yml) playbook can be run on the target server to independently verify the steps taken and their efficacy so you don't have to put all your trust in the *ansible-openvpn-hardened* contributors.
 
 ### Hardening - Audit Notes
 
 None of the audit tools used by the `audit.yml` playbook give the server a perfect score, here are some brief notes on audit findings
 
 - Separate partitions for /tmp, /home, etc.
-  - Partitioning can be tricky on cloud providers and the creation of partitions can be difficult to script without risking data loss. This is probably best left to the OS image creater or installer of the OS.
+  - Partitioning can be tricky on cloud providers and the creation of partitions can be difficult to script without risking data loss. This is probably best left to the OS image creator or installer of the OS.
 - mount options such as `noexec`, `nosuid`, and `nodev` for /tmp, /dev/shm, etc.
   - This will likely be addressed in future versions. Pull requests welcome.
 - Password requirements

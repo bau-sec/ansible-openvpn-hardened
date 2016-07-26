@@ -6,8 +6,6 @@ cache: pip
 sudo: required
 
 env:
-  global:
-    - ANSIBLE_HOST_KEY_CHECKING=False
   matrix:
     - distribution: centos
       version: 7
@@ -54,6 +52,7 @@ script:
   - ansible-lint playbooks/install.yml
   - ansible-lint playbooks/add_clients.yml
   - ansible-lint playbooks/revoke_client.yml
+  - ansible-lint playbooks/audit.yml
 
   # Get the IP of the container and add it to the inventory
   - sudo docker inspect --format '{{ .NetworkSettings.IPAddress }}' $(cat ${container_id}) > "${container_ip}"

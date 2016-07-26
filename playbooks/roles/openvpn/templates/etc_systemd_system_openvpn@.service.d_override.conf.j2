@@ -15,10 +15,10 @@ ExecStartPre=/usr/sbin/openvpn --mktun --dev tun-%i --dev-type tun --user openvp
 # systemd. The sleep makes systemd wait before checking for the pid file
 ExecStartPost=/bin/sleep 0.1
 ExecStopPost=/usr/sbin/openvpn --rmtun --dev tun-%i
-{% if ansible_distribution in ['Ubuntu'] and ansible_distribution_version in ['16.04'] %}
+{% if ansible_distribution in ['Ubuntu', 'Debian'] %}
 {#
   Clearing doesn't seem to be okay on Debian 8.5 (systemd 215) or CentOS 7.2 (systemd 219)
-  But it's okay on Ubuntu 16.04 (systemd 229)
+  But it's okay on Ubuntu 16.04 (systemd 229) and Debian 8.5 w/ backports (systemd 230)
   TODO Maybe key off of systemd version instead? custom 'set_fact' step on start?
 #}
 CapabilityBoundingSet=
@@ -35,7 +35,6 @@ InaccessibleDirectories=/usr/bin /usr/games /usr/include /usr/local /usr/share /
 InaccessibleDirectories=/var/backups /var/cache  /var/lib /var/local /var/log /var/mail /var/opt  /var/spool
 {% if ansible_distribution in ['Ubuntu'] and ansible_distribution_version in ['16.04'] %}
 {#
-  Debian 8.5 (systemd 215) doesn't like directories that don't exist being included.
   These dirs only exist on ubuntu
   TODO Maybe build list of directories
 #}
