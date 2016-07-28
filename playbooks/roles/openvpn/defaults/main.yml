@@ -46,6 +46,7 @@ openvpn_path: "/etc/openvpn"
 openvpn_path_pki: "{{ openvpn_path }}/pki"
 openvpn_path_keys: "{{ openvpn_path_pki }}/private"
 openvpn_path_certs: "{{ openvpn_path_pki }}/issued"
+openvpn_path_reqs: "{{ openvpn_path_pki }}/reqs"
 openvpn_hmac_firewall: "{{ openvpn_path_pki }}/ta.key"
 openvpn_ca_cert: "{{ openvpn_path_pki }}/ca.crt"
 openvpn_path_easyrsa: "{{ openvpn_path }}/easyrsa/easyrsa3"
@@ -77,6 +78,8 @@ required_packages:
   - openssl
   - openvpn
   - dnsmasq
+  - rsyslog
+  - logrotate
 
 unwanted_packages:
   - bind9-host

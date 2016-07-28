@@ -9,7 +9,7 @@ path_persistent_iptables_rules: /etc/iptables/rules.v4
 path_dict: /usr/share/dict/american-english-huge
 path_pam_system_auth: /etc/pam.d/common-auth
 path_pam_password_auth: /etc/pam.d/common-password
-path_mac_config: /etc/apparmor
+path_mac_config: /etc/apparmor/
 path_auditd_rules: /etc/audit/audit.rules
 path_aide_db: /var/lib/aide/aide.db
 
