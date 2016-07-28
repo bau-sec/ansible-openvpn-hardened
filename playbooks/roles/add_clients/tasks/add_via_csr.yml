@@ -19,7 +19,6 @@
       'Enter pass phrase for .*?:$': "{{ ca_password }}"
     chdir: "{{ openvpn_path_easyrsa }}"
     creates: "{{ openvpn_path_certs }}/{{ cn }}.crt"
-  no_log: true
 
 - name: OpenVPN | Add via CSR | Get client CA cert
   fetch:
