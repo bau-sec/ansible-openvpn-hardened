@@ -110,5 +110,6 @@
     path: "{{ item }}"
     mode: "go-rx"
     state: file
+    follow: true
   with_items:
     - /usr/bin/as
