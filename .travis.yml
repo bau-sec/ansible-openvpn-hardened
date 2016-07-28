@@ -81,7 +81,7 @@ script:
 
   # Test adding a client using a CSR
   - openssl genrsa -out ~/test.key 2048
-  - openssl req -new -sha256 -key ~/test.key -out ~/test.csr -batch
+  - openssl req -new -sha256 -key ~/test.key -out ~/test.csr -batch -subj "/CN=test@domain.com"
   - ansible-playbook -i test/docker-inventory -e "cmd_hosts=openvpn-internet csr_path=~/test.csr cn=test@domain.com" playbooks/add_clients.yml
 
   # Test audit
