@@ -107,3 +107,9 @@
     creates: "{{ dhparams_location }}"
   tags:
     - skip_ansible_lint
+
+- name: OpenVPN | Add Clients | Get CA cert
+  fetch:
+    src: "{{ openvpn_ca_cert }}"
+    dest: "{{ local_creds_folder }}/ca@{{openvpn_server_common_name}}.crt"
+    flat: yes
