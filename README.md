@@ -55,7 +55,7 @@ For the full server configuration, see [`etc_openvpn_server.conf.j2`](playbooks/
   - See https://community.openvpn.net/openvpn/ticket/605
 - `tls-cipher` limits allowable TLS ciphers to a subset that supports [**perfect forward secrecy**](https://en.wikipedia.org/wiki/Forward_secrecy)
   - From wikipedia:
-    
+
 	> Forward secrecy protects past sessions against future compromises of secret keys or passwords. If forward secrecy is used, encrypted communications and sessions recorded in the past cannot be retrieved and decrypted should long-term secret keys or passwords be compromised in the future, even if the adversary actively interfered.
 
 - `cipher` set to `AES-256-CBC` by default
@@ -183,6 +183,16 @@ By default only two clients are created: `laptop` and `phone`. (These defaults c
 Connect to the VPN before running the playbook. For example, to create a client named `cool_client` use
 
     ansible-playbook playbooks/add_clients.yml -e clients_to_add=cool_client
+
+### Advanced - Adding clients using a CSR
+
+Clients can also be added using a certificate signing request, CSR. This is useful if you intend to use keys generated and stored in a TPM. Generating the CSR will depend on your hardware, OS, TPM software, etc. If you're interested in this feature, you can probably figure this out (though [`.travis.yml`](.travis.yml) has an example of generating a CSR with *openssl*). This [blog post](https://qistoph.blogspot.nl/2015/12/tpm-authentication-in-openvpn-and-putty.html) shows how to create private key stored in a TPM and generate a CSR on Windows.
+
+The variable `csr_path` specifies the local path to the CSR. `cn` specifies the common name specified when the CSR was created.
+
+    ansible-playbook -e "csr_path=~/test.csr cn=test@domain.com" playbooks/add_clients.yml
+
+This will generate the client's signed certificate and put it in `fetched_creds/[server ip]/[cn]/` as well as a nearly complete `.ovpn` client configuration file. You'll need to add references to or embed your private key and signed certificate. This will vary based on how your private key is stored. If your following the guide in the blog post mentioned above you'd do this using the OpenVPN option `cryptoapicert`.
 
 ## Revoke client access
 
