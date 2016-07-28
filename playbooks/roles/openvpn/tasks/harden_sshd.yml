@@ -54,6 +54,7 @@
     - { reg: '^(#)?Banner', line: 'Banner /etc/issue'}
     # Suggested by lynis audit
     - { reg: '^(#)?UseDNS', line: 'UseDNS no'}
+    - { reg: '^(#)?AllowAgentForwarding', line: 'AllowAgentForwarding no'}
 
 - name: OpenVPN | Harden | Add VPN interfaces using 'ListenAddress' to /etc/ssh/sshd_config
   lineinfile:

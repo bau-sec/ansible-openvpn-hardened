@@ -96,3 +96,19 @@
     mode: "0600"
     state: file
   when: ansible_virtualization_type != "docker"
+
+- name: OpenVPN | Harden Misc | Disable prelinking
+  lineinfile:
+    dest: "/etc/sysconfig/prelink"
+    regexp: ^PRELINKING=
+    line: PRELINKING=no
+    state: present
+    create: true
+
+- name: OpenVPN | Harden Misc | Restrict access to compilers
+  file:
+    path: "{{ item }}"
+    mode: "go-rx"
+    state: file
+  with_items:
+    - /usr/bin/as
