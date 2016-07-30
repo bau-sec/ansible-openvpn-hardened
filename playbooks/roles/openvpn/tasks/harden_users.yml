@@ -24,8 +24,9 @@
     sudo_username: "{{ generated_sudo_username.stdout }}"
   when: sudo_user_check.stdout == ""
 
+# This is complicated to ensure the PAM password requirements set in harden_password.yml are met
 - name: OpenVPN | Harden | Generate sudo user password
-  shell: echo "$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c15)"
+  shell: echo "$(head /dev/urandom | tr -dc A-Z | head -c2)$(head /dev/urandom | tr -dc a-z | head -c2)$(head /dev/urandom | tr -dc 0-9 | head -c2)$(head /dev/urandom | tr -dc '@#$%^&*()' | head -c2)$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c8)"
   register: sudo_user_password
   changed_when: false
 

@@ -1,8 +1,8 @@
 ---
 - name: OpenVPN | Harden Kernel | Disable various kernel modules
-  kernel_blacklist:
-    name: "{{ item }}"
-    state: present
+  copy:
+    content: "install {{ item }} /bin/false"
+    dest: /etc/modprobe.d/{{ item }}.conf
   with_items:
     - cramfs
     - freevxfs

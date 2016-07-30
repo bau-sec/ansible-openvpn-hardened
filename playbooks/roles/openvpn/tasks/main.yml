@@ -18,7 +18,7 @@
 - include: harden_umask.yml
 - include: harden_services.yml
 - include: harden_kernel.yml
-  when: ansible_virtualization_type != "docker" and ansible_distribution in ['Ubuntu']
+  when: ansible_virtualization_type != "docker"
 - include: harden_misc.yml
 - include: harden_auditd.yml
 

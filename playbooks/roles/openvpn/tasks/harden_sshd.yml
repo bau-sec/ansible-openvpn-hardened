@@ -2,12 +2,12 @@
 - name: OpenVPN | Harden | Set allowed SSH users
   set_fact:
     allowed_ssh_users: "{{ sudo_username }}"
-  when: ansible_virtualization_type != "docker"
+  when: ssh_on_vpn_only == true
 
 - name: OpenVPN | Harden | Set allowed SSH users for test
   set_fact:
-    allowed_ssh_users: "{{ sudo_username }} docker"
-  when: ansible_virtualization_type == "docker"
+    allowed_ssh_users: "{{ sudo_username }} {{ ansible_env.SUDO_USER }}"
+  when: ssh_on_vpn_only != true
   tags:
     - ci_test
 
@@ -61,3 +61,4 @@
     dest: /etc/ssh/sshd_config
     line: 'ListenAddress {{ item.gateway }}'
   with_items: "{{ openvpn_instances }}"
+  when: ssh_on_vpn_only == true
