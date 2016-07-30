@@ -64,7 +64,7 @@ script:
   # - ssh -vvv docker@$(cat ${container_ip}) /bin/true
 
   # Test role.
-  - ansible-playbook -i test/docker-inventory playbooks/install.yml
+  - ansible-playbook -i test/docker-inventory --diff playbooks/install.yml
 
   # Test role idempotence.
   - >
