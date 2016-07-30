@@ -11,6 +11,11 @@
 {% for instance in openvpn_instances %}
 -A INPUT -p tcp -d {{ instance.cidr }} --dport 22 -j ACCEPT
 {% endfor %}
+
+# Ansible ssh_on_vpn_only set to: {{ ssh_on_vpn_only }}
+# {% if ssh_on_vpn_only == true %}Uncomment to {% endif %}Allow SSH connections on the default interface
+{% if ssh_on_vpn_only == true %}#{% endif %}-A INPUT -p tcp -i {{ ansible_default_ipv4.interface }} --dport 22 -j ACCEPT
+
 # Allow VPN connections to dnsmasq
 {% for instance in openvpn_instances %}
 -A INPUT -p udp -d {{ instance.gateway }} --dport 53 -j ACCEPT

@@ -1,4 +1,6 @@
 ---
+ssh_on_vpn_only: true
+
 openvpn_key_country:  "US"
 openvpn_key_province: "California"
 openvpn_key_city: "Beverly Hills"
