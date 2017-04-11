@@ -20,9 +20,10 @@
   delay: 5
 
 - name: OpenVPN | package | Add the official OpenVPN APT key
+  # Work around for ansible issue https://github.com/ansible/ansible/issues/22647
   apt_key:
-    id: E158C569
-    url: "https://swupdate.openvpn.net/repos/repo-public.gpg"
+    id: 8E6DA8B4E158C569
+    url: keyserver.ubuntu.com
     state: present
   when: ansible_os_family == "Debian"
 
