@@ -19,11 +19,16 @@
   retries: 5
   delay: 5
 
+- name: OpenVPN | package | Get official OpenVPN APT key
+  # Work around for ansible issue https://github.com/ansible/ansible/issues/22647
+  command: wget -O /tmp/openvpn.gpg https://swupdate.openvpn.net/repos/repo-public.gpg
+  creates: /tmp/openvpn.gpg
+  when: ansible_os_family == "Debian"
+
 - name: OpenVPN | package | Add the official OpenVPN APT key
   # Work around for ansible issue https://github.com/ansible/ansible/issues/22647
   apt_key:
-    id: 8E6DA8B4E158C569
-    url: "https://keyserver.ubuntu.com"
+    file: /tmp/openvpn.gpg
     state: present
   when: ansible_os_family == "Debian"
 
