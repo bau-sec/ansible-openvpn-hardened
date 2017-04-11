@@ -17,7 +17,7 @@
     path: "{{ item.stat.path }}"
     mode: "go-w"
     state: directory
-  when: "item.stat.islnk == false"
+  when: "item.stat.exists == true and item.stat.islnk == false"
   with_items: "{{ path_dirs.results }}"
 
 - name: OpenVPN | Harden Misc | Add legal banner
