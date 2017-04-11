@@ -2,6 +2,7 @@
 - name: OpenVPN | package | Ensure the APT cache is up to date
   apt:
     update_cache: yes
+  changed_when: False
   when: ansible_os_family == "Debian"
 
 - name: OpenVPN | package | Remove non-required packages
