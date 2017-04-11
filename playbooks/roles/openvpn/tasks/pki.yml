@@ -9,6 +9,7 @@
 
 - name: OpenVPN | PKI | Make local destination folder
   local_action: file path={{ local_creds_folder }}/ state=directory
+  become: False
 
 - name: OpenVPN | PKI | Generate a random server common name
   shell: grep -v -P "[\x80-\xFF]" {{ path_dict }} | sed -e "s/'//" | shuf -n 2 | xargs | sed -e 's/ /./g' | cut -c 1-64 > {{ openvpn_server_common_name_file }}
@@ -28,6 +29,7 @@
 
 - name: OpenVPN | PKI | Store CA password
   local_action: template src=group_vars_all.yml.j2 dest={{ playbook_dir }}/group_vars/all.yml
+  become: False
   when: ca_password is not defined
 
 - name: OpenVPN | PKI | Set CA password variable
