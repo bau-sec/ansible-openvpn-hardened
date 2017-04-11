@@ -23,7 +23,7 @@
   # Work around for ansible issue https://github.com/ansible/ansible/issues/22647
   apt_key:
     id: 8E6DA8B4E158C569
-    url: keyserver.ubuntu.com
+    url: "https://keyserver.ubuntu.com"
     state: present
   when: ansible_os_family == "Debian"
 
