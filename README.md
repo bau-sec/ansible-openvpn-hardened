@@ -21,7 +21,7 @@ The following Linux distros are supported:
 
 - CentOS 7.2 x64 (And by extension RHEL 7.2 should work, but this hasn't been tested)
 - Ubuntu 16.04 x64
-- Debian 8.5 x64
+- Debian 8.7 x64
 
 Other distros and versions may work but no promises. If support for another distro is desired, submit an issue ticket. Pull requests are always welcome.
 
@@ -105,7 +105,7 @@ Get *ansible-openvpn-hardened*
 
     git clone https://github.com/bau-sec/ansible-openvpn-hardened.git
 
-Create a target machine using your cloud provider of choice. The CentOS 7.2, Ubuntu 16.04 and Debian 8.5 images on Digital Ocean and Microsoft's Azure have been tested and should work well. Cloud providers are ideal because you can easily spin up a test box to try things out on and delete the instance when you're done or when you no longer need the VM. Other cloud providers, a local VM or box should work fine as well but haven't been tested.
+Create a target machine using your cloud provider of choice. The CentOS 7.2, Ubuntu 16.04 and Debian 8.7 images on Digital Ocean and Microsoft's Azure have been tested and should work well. Cloud providers are ideal because you can easily spin up a test box to try things out on and delete the instance when you're done or when you no longer need the VM. Other cloud providers, a local VM or box should work fine as well but haven't been tested.
 
 Make sure you can ssh into the target machine that will become your OpenVPN box. If using a cloud provider they should provide you with login credentials and instructions. For example, to log into the `root` account on a box with the ip `192.168.1.10` use
 
