@@ -1,6 +1,7 @@
 ---
 - name: OpenVPN | Add Clients | Check for existing private key passwords
   local_action: stat path={{ local_creds_folder }}/{{ item }}/{{ openvpn_server_common_name }}_pk_pass.txt
+  become: False
   register: client_pk_passwords_local
   with_items:
     - "{{ clients_to_add }}"
@@ -14,12 +15,14 @@
 
 - name: OpenVPN | Add Clients | Make local destination
   local_action: file path="{{ local_creds_folder }}/{{ item }}/" state=directory
+  become: False
   with_items:
     - "{{ clients_to_add }}"
 
 - name: OpenVPN | Add Clients | Write private key pass phrases
   local_action: copy content={{ item[1].stdout }} dest={{ local_creds_folder }}/{{ item[0] }}/{{ openvpn_server_common_name }}_pk_pass.txt
   no_log: true
+  become: False
   with_together:
     - "{{ clients_to_add }}"
     - "{{ client_pk_passwords.results }}"
@@ -28,6 +31,7 @@
 - name: OpenVPN | Add Clients | Read private key pass phrases
   local_action: command cat {{ local_creds_folder }}/{{ item }}/{{ openvpn_server_common_name }}_pk_pass.txt
   no_log: true
+  become: False
   register: client_pk_passwords
   with_items: "{{ clients_to_add }}"
   changed_when: false

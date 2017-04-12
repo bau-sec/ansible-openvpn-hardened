@@ -56,6 +56,7 @@
 
 - name: OpenVPN | Harden | Store sudo user creds
   local_action: template src=group_vars_openvpn-vpn.yml.j2 dest={{ playbook_dir }}/group_vars/openvpn-vpn.yml
+  become: False
   when: user_result.changed
 
 # Password setting used here is similar to running 'passwd -l root' which just
