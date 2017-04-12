@@ -19,7 +19,7 @@ env:
       run_opts: "'--detach --privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup'"
       ssh: ssh
     - distribution: debian
-      version: 8.5
+      version: 8.7
       init: /bin/systemd
       run_opts: "'--detach --privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup'"
       ssh: ssh
