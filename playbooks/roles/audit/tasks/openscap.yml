@@ -4,9 +4,9 @@
     name: "{{ item }}"
   with_items: "{{ audit_oscap_packages }}"
 
-- name: Audit | OpenSCAP | Get SSGs from OpenSCAP github 
+- name: Audit | OpenSCAP | Get SSGs from OpenSCAP github
   get_url:
-    url: "{{ oscap_ssg_url }}" 
+    url: "{{ oscap_ssg_url }}"
     dest: "~/"
   when: ansible_os_family == "Debian"
 

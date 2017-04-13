@@ -42,7 +42,8 @@
     shell: "/bin/bash"
     groups: "{{ sudo_username }},{{ sudo_group }}"
     comment: "{{ sudo_user_comment }}"
-  register: user_result
+  notify:
+    - New Sudo User Creds
 
 # As recommended by https://help.ubuntu.com/lts/serverguide/user-management.html
 - name: OpenVPN | Harden | Remove world readable home directory permissions
@@ -53,11 +54,6 @@
 
 - name: OpenVPN | Harden | Add or update authorized key
   action: authorized_key user={{ sudo_username }} key="{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
-
-- name: OpenVPN | Harden | Store sudo user creds
-  local_action: template src=group_vars_openvpn-vpn.yml.j2 dest={{ playbook_dir }}/group_vars/openvpn-vpn.yml
-  become: False
-  when: user_result.changed
 
 # Password setting used here is similar to running 'passwd -l root' which just
 # prefixes the hashed password in /etc/shadow with an '!', making it an invalid hash
