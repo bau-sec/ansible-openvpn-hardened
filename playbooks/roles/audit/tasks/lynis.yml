@@ -22,6 +22,7 @@
 
 - name: Audit | lynis | Make local destination
   local_action: file path="{{ local_creds_folder }}/" state=directory
+  become: False
 
 - name: Audit | lynis | Get report
   fetch:

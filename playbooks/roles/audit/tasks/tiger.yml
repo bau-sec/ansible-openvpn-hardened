@@ -12,6 +12,7 @@
 
 - name: Audit | tiger | Make local destination
   local_action: file path="{{ local_creds_folder }}/" state=directory
+  become: False
 
 - name: Audit | tiger | Get report name
   find:

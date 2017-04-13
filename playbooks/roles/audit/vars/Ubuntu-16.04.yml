@@ -1,0 +1,21 @@
+---
+audit_oscap_packages:
+  - libopenscap8
+  - unzip
+  - git
+oscap_ssg_version: 0.1.32
+oscap_ssg_archive: "scap-security-guide-{{ oscap_ssg_version }}.zip"
+oscap_ssg_url: "https://github.com/OpenSCAP/scap-security-guide/releases/download/v{{ oscap_ssg_version }}/{{ oscap_ssg_archive }}"
+
+oscap_policy_parent: "/usr/local"
+oscap_policy_base: "{{ oscap_policy_parent }}/scap-security-guide-{{ oscap_ssg_version }}"
+
+oscap_reports:
+  - { name: default,
+      profile: xccdf_org.ssgproject.content_profile_common,
+      policy: "{{ oscap_policy_base }}/ssg-ubuntu1604-ds.xml",
+      extra: "" }
+  - { name: high,
+      profile: xccdf_org.ssgproject.content_profile_anssi_np_nt28_high,
+      policy: "{{ oscap_policy_base }}/ssg-ubuntu1604-ds.xml",
+      extra: "" }
