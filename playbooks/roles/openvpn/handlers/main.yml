@@ -28,7 +28,7 @@
   when: (ansible_virtualization_type != "docker") or
         (ansible_virtualization_type == "docker" and ansible_distribution not in ['Ubuntu'])
 
-- name: New Sudo User Creds 
+- name: New Sudo User Creds
   local_action: template src=group_vars_openvpn-vpn.yml.j2 dest={{ playbook_dir }}/group_vars/openvpn-vpn.yml
   become: False
 
