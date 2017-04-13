@@ -1,4 +1,7 @@
 ---
+audit_oscap_packages:
+  - openscap-scanner
+  - scap-security-guide
 
 oscap_policy_base: "/usr/share/xml/scap/ssg/content/"
 
