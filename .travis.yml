@@ -38,7 +38,7 @@ before_install:
   - sudo docker run ${run_opts} ${distribution}-${version}:ansible "${init}"
 
 install:
-  - sudo -H pip install ansible ansible-lint==3.2.1
+  - sudo -H pip install ansible ansible-lint
   - sudo apt-get -y install openssl
 
 script:

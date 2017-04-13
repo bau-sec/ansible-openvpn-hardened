@@ -4,13 +4,17 @@
     name: "{{ item }}"
   with_items: "{{ audit_oscap_packages }}"
 
-- name: Audit | OpenSCAP | Install ubuntu-scap
-  git:
-    repo: https://github.com/GovReady/ubuntu-scap.git
-    accept_hostkey: True
-    remote: github
-    version: master
-    dest: "{{ oscap_policy_base }}"
+- name: Audit | OpenSCAP | Get SSGs from OpenSCAP github
+  get_url:
+    url: "{{ oscap_ssg_url }}"
+    dest: "~/"
+  when: ansible_os_family == "Debian"
+
+- name: Audit | OpenSCAP | Unarchive OpenSCAP SSGs
+  unarchive:
+    src: "~/{{ oscap_ssg_archive }}"
+    dest: "{{ oscap_policy_parent }}"
+    remote_src: True
   when: ansible_os_family == "Debian"
 
 - name: Audit | OpenSCAP | Run
@@ -39,6 +43,7 @@
 
 - name: Audit | OpenSCAP | Make local destination
   local_action: file path="{{ local_creds_folder }}/" state=directory
+  become: False
 
 - name: Audit | OpenSCAP | Get report
   fetch:

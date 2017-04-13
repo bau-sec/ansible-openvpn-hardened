@@ -5,12 +5,14 @@
 - name: OpenVPN | Audit | Set Distro/Version specific variables
   include_vars: "{{ item }}"
   with_first_found:
-    #- "../vars/{{ ansible_distribution }}-{{ ansible_distribution_major_version | int}}.yml"
-    #- "../vars/{{ ansible_distribution }}.yml"
-    - "../../openvpn/vars/{{ ansible_os_family }}.yml"
+    - "../vars/{{ ansible_distribution }}-{{ ansible_distribution_version}}.yml"
+    - "../vars/{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
+    - "../vars/{{ ansible_os_family }}.yml"
     #- "../vars/default.yml"
 
 - include: openscap.yml
+  #For now skip debian since it's version of oscap is so old it won't support new definitions. Revisit for Debian 9
+  when: ansible_distribution not in ['Debian']
 - include: lynis.yml
 # No package for CentOS, RHEL, etc. Maybe pull from src in the future?
 - include: tiger.yml

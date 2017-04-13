@@ -49,13 +49,3 @@ os_family_specific_pre:
   - libpam-pwquality
   - aide-common
 
-audit_oscap_packages:
-  - libopenscap8
-
-oscap_policy_base: "/usr/local/ubuntu-scap"
-
-oscap_reports:
-  - { name: default,
-      profile: xccdf_ubuntu_profile_default,
-      policy: "{{ oscap_policy_base }}/ubuntu-xccdf.xml",
-      extra: "--cpe {{ oscap_policy_base }}/ubuntu-cpe.xml" }
