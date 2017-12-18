@@ -39,7 +39,7 @@
 
 - name: OpenVPN | package | Add the official OpenVPN repository
   apt_repository:
-    repo: 'deb https://swupdate.openvpn.net/apt {{ ansible_lsb.codename }} main'
+    repo: 'deb https://build.openvpn.net/debian/openvpn/stable {{ ansible_lsb.codename }} main'
     state: present
     update_cache: yes
   when: ansible_os_family == "Debian"

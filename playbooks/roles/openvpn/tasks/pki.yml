@@ -4,7 +4,7 @@
     repo: https://github.com/OpenVPN/easy-rsa.git
     accept_hostkey: True
     remote: github
-    version: master
+    version: "{{ openvpn_easyrsa_version }}"
     dest: "{{ openvpn_path }}/easyrsa"
 
 - name: OpenVPN | PKI | Make local destination folder
