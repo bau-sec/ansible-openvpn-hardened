@@ -4,9 +4,7 @@
     repo: https://github.com/OpenVPN/easy-rsa.git
     accept_hostkey: True
     remote: github
-    ## lock git checkout to pull in openssl fix
-    ##    https://github.com/OpenVPN/easy-rsa/issues/132
-    version: a138c0d83b0ff1feed385c5d2d7a1c25422fe04d
+    version: "{{ openvpn_easyrsa_version }}"
     dest: "{{ openvpn_path }}/easyrsa"
 
 - name: OpenVPN | PKI | Make local destination folder
