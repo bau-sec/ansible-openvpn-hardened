@@ -1,7 +1,4 @@
 ---
-- name: OpenVPN | Add Clients | Set variables
-  include_vars: ../../openvpn/defaults/main.yml
-
 - name: OpenVPN | Add Clients | Register the OpenVPN server common name
   command: cat {{ openvpn_server_common_name_file }}
   no_log: true
