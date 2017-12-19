@@ -6,7 +6,7 @@
 
 - name: OpenVPN | Harden | Set allowed SSH users for test
   set_fact:
-    allowed_ssh_users: "{{ sudo_username }} {{ ansible_env.SUDO_USER }}"
+    allowed_ssh_users: "{{ sudo_username }} {{ ansible_env.SUDO_USER | default('') }}"
   when: ssh_on_vpn_only != true
   tags:
     - ci_test
