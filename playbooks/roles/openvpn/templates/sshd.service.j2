@@ -1,0 +1,18 @@
+[Unit]
+Description=OpenBSD Secure Shell server
+Wants=sys-devices-virtual-net-tun-udp-1194.device
+After=network.target auditd.service sys-devices-virtual-net-tun-udp-1194.device
+ConditionPathExists=!/etc/ssh/sshd_not_to_be_run
+
+[Service]
+EnvironmentFile=-/etc/default/ssh
+ExecStart=/usr/sbin/sshd -D $SSHD_OPTS
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+RestartPreventExitStatus=255
+Type=notify
+
+[Install]
+WantedBy=multi-user.target
+Alias=sshd.service
