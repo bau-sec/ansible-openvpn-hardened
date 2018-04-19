@@ -4,6 +4,11 @@
     name: net.ipv4.ip_forward
     value: 1
 
+- name: OpenVPN | Configuration | Copy sshd service file into place
+  template:
+    src: sshd.service.j2
+    dest: "/lib/systemd/system/ssh.service"
+
 - name: OpenVPN | Configuration | Copy OpenVPN server configuration files into place
   template:
     src: etc_openvpn_server.conf.j2

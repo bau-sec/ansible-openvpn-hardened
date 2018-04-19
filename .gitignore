@@ -1,3 +1,6 @@
 fetched_creds
 *.retry
 /inventory
+.DS_Store
+playbooks/group_vars/all.yml
+playbooks/group_vars/openvpn-vpn.yml

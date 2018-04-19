@@ -5,6 +5,8 @@
 [openvpn-internet]
 # Typical Digital Ocean config w/ root user and pub/priv key authentication
 #255.255.255.255 ansible_user=root
+# Typical Amazon AWS Ubuntu config w/ sudo user ubuntu and pub/priv key authentication
+#255.255.255.255 ansible_user=ubuntu ansible_become_user=root ansible_become=yes
 # Typical azure config w/ ssh authentication
 #255.255.255.255 ansible_user=vpnuser ansible_become=yes
 # Config for a machine with pub/priv key and password
