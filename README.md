@@ -105,7 +105,7 @@ Get *ansible-openvpn-hardened*
 
     git clone https://github.com/bau-sec/ansible-openvpn-hardened.git
 
-Create a target machine using your cloud provider of choice. The CentOS 7.2, Ubuntu 16.04 and Debian 8.7 images on Digital Ocean and Microsoft's Azure have been tested and should work well. Cloud providers are ideal because you can easily spin up a test box to try things out on and delete the instance when you're done or when you no longer need the VM. Other cloud providers, a local VM or box should work fine as well but haven't been tested.
+Create a target machine using your cloud provider of choice. The CentOS 7.2, Ubuntu 16.04 and Debian 8.7 images on Digital Ocean and Microsoft's Azure have been tested and should work well. Cloud providers are ideal because you can easily spin up a test box to try things out on and delete the instance when you're done or when you no longer need the VM. Other cloud providers, a local VM or box should work fine as well but haven't been tested. If you are using a cloud provider, don't forget to allow incoming udp traffic for port 1194 for your machine.
 
 Make sure you can ssh into the target machine that will become your OpenVPN box. If using a cloud provider they should provide you with login credentials and instructions. For example, to log into the `root` account on a box with the ip `192.168.1.10` use
 
@@ -121,7 +121,7 @@ Run the install playbook
 
     ansible-playbook playbooks/install.yml
 
-The playbook should run for **5-30 minutes** depending on how good your target box is at hashing and crypto operations. Assuming the above steps were successful, you should now have directory called `fetched_creds`. This contains the openvpn configuration files and private keys that can be distributed to your clients.
+The playbook should run for **5-30 minutes** depending on how good your target box is at hashing and crypto operations. Assuming the above steps were successful, you should now have directory called `fetched_creds`. This contains the openvpn configuration files and private keys that can be distributed to your clients. 
 
 Try connecting to the newly created OpenVPN server
 
