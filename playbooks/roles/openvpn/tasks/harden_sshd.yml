@@ -31,7 +31,7 @@
     - { reg: '^(#)?UsePrivilegeSeparation', line: 'UsePrivilegeSeparation SANDBOX'}
     - { reg: '^(#)?X11Forwarding', line: 'X11Forwarding no'}
     - { reg: '^(#)?AllowUsers', line: 'AllowUsers {{ allowed_ssh_users }}'}
-    # V-38607 - The SSH daemon must be configured to use only the SSHv2 protocol
+    # The SSH daemon must print the date and time of the last user login when a user logs in
     - { reg: '^(#)?PrintLastLog', line: 'PrintLastLog yes'}
     # V-38607 - The SSH daemon must be configured to use only the SSHv2 protocol
     - { reg: '^(#)?Protocol \d', line: 'Protocol 2'}
